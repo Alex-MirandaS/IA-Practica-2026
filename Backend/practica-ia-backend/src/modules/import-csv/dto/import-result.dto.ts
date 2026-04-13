@@ -17,5 +17,5 @@ export class ImportResultDto {
     type: [String],
     example: ['Fila 4: codigo ya existe', 'Fila 8: id_carrera no existe (999)'],
   })
-  warnings!: string[];
+  warnings!: string[]; 
 }

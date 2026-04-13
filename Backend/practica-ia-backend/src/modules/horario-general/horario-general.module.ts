@@ -3,9 +3,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { HorarioGeneral } from './entities/horario-general.entity';
 import { HorarioGeneralService } from './horario-general.service';
 import { HorarioGeneralController } from './horario-general.controller';
+import { Seccion } from '../seccion/entities/seccion.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([HorarioGeneral])],
+  imports: [TypeOrmModule.forFeature([HorarioGeneral, Seccion])],
   controllers: [HorarioGeneralController],
   providers: [HorarioGeneralService],
   exports: [HorarioGeneralService],

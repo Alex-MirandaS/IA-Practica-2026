@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { HorarioGeneralService } from './horario-general.service';
 import { CreateHorarioGeneralDto } from './dto/create-horario-general.dto';
@@ -13,6 +13,27 @@ export class HorarioGeneralController {
   @ApiOperation({ summary: 'Crear registro' })
   create(@Body() dto: CreateHorarioGeneralDto) {
     return this.service.create(dto);
+  }
+
+  @Post('sync/latest')
+  @ApiOperation({
+    summary: 'Sincronizar desde servidor de horarios',
+    description:
+      'Consulta el backend externo (localhost:3000 por defecto), toma el ultimo horario y reconstruye horario_general con sus curso_horario.',
+  })
+  syncLatest() {
+    return this.service.syncLatestFromScheduler();
+  }
+
+  @Post('sync/:horarioId')
+  @ApiOperation({
+    summary: 'Sincronizar horario especifico desde servidor de horarios',
+    description:
+      'Consulta el backend externo y sincroniza horario_general usando un id_horario especifico.',
+  })
+  @ApiParam({ name: 'horarioId', type: Number, description: 'ID del horario a sincronizar desde el servidor externo' })
+  syncByHorarioId(@Param('horarioId', ParseIntPipe) horarioId: number) {
+    return this.service.syncByHorarioId(horarioId);
   }
 
   @Get()
