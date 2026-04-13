@@ -19,6 +19,7 @@ import { DetalleHorarioModule } from './modules/detalle-horario/detalle-horario.
 import { NotificacionModule } from './modules/notificacion/notificacion.module';
 import { ControlRepitenciasModule } from './modules/control-repitencias/control-repitencias.module';
 import { ResumenEstudianteModule } from './modules/resumen-estudiante/resumen-estudiante.module';
+import { ImportCsvModule } from './modules/import-csv/import-csv.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { ResumenEstudianteModule } from './modules/resumen-estudiante/resumen-es
     NotificacionModule,
     ControlRepitenciasModule,
     ResumenEstudianteModule,
+    ImportCsvModule,
   ],
   controllers: [AppController],
   providers: [AppService],
