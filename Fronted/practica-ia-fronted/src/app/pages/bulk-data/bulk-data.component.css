@@ -1,0 +1,55 @@
+:host {
+  display: block;
+}
+
+.page-header {
+  margin-bottom: 1rem;
+}
+
+.page-header h2 {
+  margin: 0.35rem 0 0.5rem;
+}
+
+.page-header p {
+  margin: 0;
+  color: #64748b;
+}
+
+.eyebrow {
+  display: inline-flex;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(25, 118, 210, 0.1);
+  color: #1565c0;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.panel {
+  margin-bottom: 1rem;
+  border-radius: 20px;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.file-picker {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.file-picker input[type='file'] {
+  max-width: 100%;
+}
+
+.file-picker span,
+.muted {
+  color: #64748b;
+}
