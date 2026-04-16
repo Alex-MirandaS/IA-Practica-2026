@@ -1,0 +1,39 @@
+<section class="page-header">
+  <div>
+    <span class="eyebrow">Carga masiva</span>
+    <h2>Importación de datos académicos</h2>
+    <p>Adjunta un archivo para enviarlo al backend y poblar la información del horario estudiante.</p>
+  </div>
+</section>
+
+<mat-card class="panel">
+  <form [formGroup]="form" class="form" (ngSubmit)="upload()">
+    <mat-form-field appearance="outline">
+      <mat-label>Nombre del conjunto de datos</mat-label>
+      <input matInput formControlName="datasetName" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Observaciones</mat-label>
+      <textarea matInput formControlName="notes" rows="4"></textarea>
+    </mat-form-field>
+
+    <div class="file-picker">
+      <label class="file-picker__label" for="datasetFile">Archivo JSON, CSV o Excel</label>
+      <input id="datasetFile" type="file" (change)="onFileSelected($event)" />
+      <span>{{ selectedFileName }}</span>
+    </div>
+
+    <button mat-raised-button color="primary" type="submit" [disabled]="isLoading">
+      {{ isLoading ? 'Enviando...' : 'Cargar datos' }}
+    </button>
+  </form>
+</mat-card>
+
+<mat-card class="panel" *ngIf="response">
+  <mat-card-title>Respuesta del backend</mat-card-title>
+  <mat-card-content>
+    <p>{{ response.message }}</p>
+    <p class="muted" *ngIf="response.detail">{{ response.detail }}</p>
+  </mat-card-content>
+</mat-card>

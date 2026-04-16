@@ -1,0 +1,45 @@
+<section class="hero">
+  <div class="hero__copy">
+    <span class="eyebrow">Sistema académico</span>
+    <h1>Gestión de horario y rendimiento académico</h1>
+    <p>
+      Accede a las vistas iniciales para cargar datos, revisar el pensum,
+      generar un horario personalizado y controlar el rendimiento académico.
+    </p>
+    <div class="hero__actions">
+      <a mat-raised-button color="primary" routerLink="/carga-masiva">Empezar</a>
+      <a mat-stroked-button color="primary" routerLink="/pensum">Ver pensum</a>
+    </div>
+  </div>
+
+  <mat-card class="hero__panel">
+    <mat-card-header>
+      <mat-card-title>Resumen inicial</mat-card-title>
+      <mat-card-subtitle>Vistas preparadas para integrarse con el backend</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="stats">
+        <div>
+          <strong>04</strong>
+          <span>módulos principales</span>
+        </div>
+        <div>
+          <strong>01</strong>
+          <span>navbar responsivo</span>
+        </div>
+        <div>
+          <strong>API</strong>
+          <span>conectada a localhost:4001</span>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</section>
+
+<section class="cards-grid">
+  <mat-card class="feature-card" *ngFor="let card of featureCards" [routerLink]="card.route">
+    <mat-icon color="primary">{{ card.icon }}</mat-icon>
+    <h3>{{ card.title }}</h3>
+    <p>{{ card.description }}</p>
+  </mat-card>
+</section>

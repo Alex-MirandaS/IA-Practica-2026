@@ -1,0 +1,64 @@
+<section class="page-header">
+  <div>
+    <span class="eyebrow">Pensum</span>
+    <h2>Visualización del plan de estudios</h2>
+    <p>Consulta la estructura académica cargada desde el backend y revisa sus requisitos.</p>
+  </div>
+</section>
+
+<mat-card class="panel" *ngIf="errorMessage">
+  <mat-card-content>{{ errorMessage }}</mat-card-content>
+</mat-card>
+
+<mat-card class="panel">
+  <mat-card-content>
+    <div class="table-wrap" *ngIf="!isLoading; else loading">
+      <table mat-table [dataSource]="courses" class="mat-elevation-z1">
+        <ng-container matColumnDef="codigo">
+          <th mat-header-cell *matHeaderCellDef>Código</th>
+          <td mat-cell *matCellDef="let course">{{ course.codigo }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="nombre">
+          <th mat-header-cell *matHeaderCellDef>Curso</th>
+          <td mat-cell *matCellDef="let course">{{ course.nombre }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="creditos">
+          <th mat-header-cell *matHeaderCellDef>Créditos</th>
+          <td mat-cell *matCellDef="let course">{{ course.creditos }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="semestre">
+          <th mat-header-cell *matHeaderCellDef>Semestre</th>
+          <td mat-cell *matCellDef="let course">{{ course.semestre }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="prerequisitos">
+          <th mat-header-cell *matHeaderCellDef>Prerrequisitos</th>
+          <td mat-cell *matCellDef="let course">{{ course.prerequisitos?.join(', ') || 'Sin prerrequisitos' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="area">
+          <th mat-header-cell *matHeaderCellDef>Área</th>
+          <td mat-cell *matCellDef="let course">{{ course.area || '-' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="estado">
+          <th mat-header-cell *matHeaderCellDef>Estado</th>
+          <td mat-cell *matCellDef="let course">{{ course.estado || 'Pendiente' }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+    </div>
+
+    <ng-template #loading>
+      <div class="loading">
+        <mat-progress-spinner diameter="42" mode="indeterminate"></mat-progress-spinner>
+        <span>Cargando pensum...</span>
+      </div>
+    </ng-template>
+  </mat-card-content>
+</mat-card>

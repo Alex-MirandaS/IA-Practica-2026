@@ -1,0 +1,93 @@
+:host {
+  display: block;
+}
+
+.shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(25, 118, 210, 0.16), transparent 36%),
+    linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 1rem;
+  backdrop-filter: blur(12px);
+  background: rgba(25, 118, 210, 0.95);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.brand mat-icon {
+  width: 2rem;
+  height: 2rem;
+  font-size: 2rem;
+}
+
+.brand div {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.brand strong {
+  font-size: 1rem;
+}
+
+.brand span {
+  font-size: 0.78rem;
+  opacity: 0.85;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.nav-links a {
+  color: rgba(255, 255, 255, 0.92);
+  border-radius: 999px;
+}
+
+.nav-links a mat-icon {
+  margin-right: 0.35rem;
+}
+
+.nav-links a.active-link {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.content-shell {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+@media (max-width: 960px) {
+  .topbar {
+    flex-wrap: wrap;
+    padding-bottom: 0.75rem;
+  }
+
+  .spacer {
+    display: none;
+  }
+
+  .nav-links {
+    width: 100%;
+  }
+}

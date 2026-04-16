@@ -1,0 +1,35 @@
+import { DataSource } from 'typeorm';
+import { ImportResultDto } from './dto/import-result.dto';
+import { ImportTarget } from './dto/import-target.dto';
+export declare class ImportCsvService {
+    private readonly dataSource;
+    constructor(dataSource: DataSource);
+    importByTarget(targetInput: ImportTarget | string, fileBuffer: Buffer): Promise<ImportResultDto>;
+    private importCursos;
+    private importCarreras;
+    private importPensum;
+    private importCursoPrerrequisito;
+    private importHistorialAcademico;
+    private importEstudiantes;
+    private parseCsv;
+    private detectDelimiter;
+    private splitCsvLine;
+    private normalizedKey;
+    private findValueByAliases;
+    private requiredValueFromAliases;
+    private optionalValueFromAliases;
+    private requiredIntFromAliases;
+    private optionalIntByAliases;
+    private optionalDecimalByAliases;
+    private optionalBooleanByAliases;
+    private optionalBooleanMaybeByAliases;
+    private resolveCarrera;
+    private resolveSemestre;
+    private resolveCurso;
+    private resolveEstudiante;
+    private resolveCiclo;
+    private resolvePensumReference;
+    private findPensumByRelations;
+    private findHistorialAcademico;
+    private assertForeignKey;
+}

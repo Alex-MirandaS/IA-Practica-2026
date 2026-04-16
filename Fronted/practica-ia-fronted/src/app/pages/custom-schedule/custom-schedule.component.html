@@ -1,0 +1,109 @@
+<section class="page-header">
+  <div>
+    <span class="eyebrow">Horario personalizado</span>
+    <h2>Generación de horario</h2>
+    <p>Consulta la previsualización y luego genera el horario con el algoritmo del backend.</p>
+  </div>
+</section>
+
+<mat-card class="panel">
+  <form [formGroup]="form" class="form" (ngSubmit)="generate()">
+    <div class="grid-2">
+      <mat-form-field appearance="outline">
+        <mat-label>ID del estudiante</mat-label>
+        <input matInput formControlName="id_estudiante" type="number" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Máximo de créditos</mat-label>
+        <input matInput formControlName="max_credits" type="number" />
+      </mat-form-field>
+    </div>
+
+    <div class="grid-3">
+      <mat-form-field appearance="outline">
+        <mat-label>Population size</mat-label>
+        <input matInput formControlName="population_size" type="number" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Generations</mat-label>
+        <input matInput formControlName="generations" type="number" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Persistir horario</mat-label>
+        <mat-select formControlName="persist">
+          <mat-option [value]="true">Sí</mat-option>
+          <mat-option [value]="false">No</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="toolbar-actions">
+      <button mat-stroked-button color="primary" type="button" (click)="loadPreview()">
+        Cargar previsualización
+      </button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="isLoading">
+        {{ isLoading ? 'Generando...' : 'Generar horario' }}
+      </button>
+    </div>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Cursos seleccionados</mat-label>
+      <mat-select formControlName="selected_course_ids" multiple>
+        <mat-option *ngFor="let course of availableCourses" [value]="course.id_curso">
+          {{ course.codigo }} - {{ course.nombre }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </form>
+</mat-card>
+
+<mat-card class="panel info-panel">
+  <mat-card-content>{{ previewMessage }}</mat-card-content>
+</mat-card>
+
+<mat-card class="panel" *ngIf="availableCourses.length > 0">
+  <mat-card-title>Cursos disponibles</mat-card-title>
+  <mat-card-content>
+    <div class="schedule-grid courses-grid">
+      <mat-card class="schedule-item" *ngFor="let course of availableCourses">
+        <strong>{{ course.codigo }}</strong>
+        <span>{{ course.nombre }}</span>
+        <small>{{ course.creditos }} créditos · {{ course.obligatorio ? 'Obligatorio' : 'Electivo' }}</small>
+      </mat-card>
+    </div>
+  </mat-card-content>
+</mat-card>
+
+<ng-container *ngIf="schedule as result">
+<mat-card class="panel">
+  <mat-card-title>Resultado</mat-card-title>
+  <mat-card-subtitle>
+    {{ result.status }} · {{ result.creditos_seleccionados }} créditos seleccionados
+  </mat-card-subtitle>
+  <mat-card-content>
+    <p *ngIf="result.sugerencia">{{ result.sugerencia }}</p>
+
+    <div class="schedule-grid" *ngIf="result.cursos?.length">
+      <mat-card class="schedule-item" *ngFor="let block of result.cursos">
+        <strong>{{ block.codigo }}</strong>
+        <span>{{ block.nombre }}</span>
+        <small>{{ block.seccion }} · {{ block.id_horario_general }}</small>
+      </mat-card>
+    </div>
+  </mat-card-content>
+</mat-card>
+
+<mat-card class="panel" *ngIf="result.conflictos?.length">
+  <mat-card-title>Conflictos</mat-card-title>
+  <mat-card-content>
+    <mat-list>
+      <mat-list-item *ngFor="let conflict of result.conflictos">
+        {{ conflict.curso_a.codigo }} vs {{ conflict.curso_b.codigo }}
+      </mat-list-item>
+    </mat-list>
+  </mat-card-content>
+</mat-card>
+</ng-container>
