@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { HorarioEstudianteService } from './horario-estudiante.service';
 import { CreateHorarioEstudianteDto } from './dto/create-horario-estudiante.dto';
 import { UpdateHorarioEstudianteDto } from './dto/update-horario-estudiante.dto';
+import { GenerateHorarioPersonalizadoDto } from './dto/generate-horario-personalizado.dto';
 
 @ApiTags('horario-estudiante')
 @Controller('horario-estudiante')
@@ -13,6 +14,27 @@ export class HorarioEstudianteController {
   @ApiOperation({ summary: 'Crear registro' })
   create(@Body() dto: CreateHorarioEstudianteDto) {
     return this.service.create(dto);
+  }
+
+  @Get('preview/:idEstudiante')
+  @ApiOperation({
+    summary: 'Previsualizar cursos para generar horario',
+    description:
+      'Marca por defecto cursos obligatorios abiertos y muestra elegibilidad por prerrequisitos/creditos acumulados.',
+  })
+  @ApiParam({ name: 'idEstudiante', type: Number })
+  previewCursos(@Param('idEstudiante', ParseIntPipe) idEstudiante: number) {
+    return this.service.previewCursosParaSeleccion(idEstudiante);
+  }
+
+  @Post('generar')
+  @ApiOperation({
+    summary: 'Generar horario personalizado con algoritmo genetico',
+    description:
+      'Genera el mejor horario posible priorizando cursos cuello de botella y evitando traslapes. Si hay conflicto, retorna alternativas.',
+  })
+  generarHorario(@Body() dto: GenerateHorarioPersonalizadoDto) {
+    return this.service.generarHorarioPersonalizado(dto);
   }
 
   @Get()
