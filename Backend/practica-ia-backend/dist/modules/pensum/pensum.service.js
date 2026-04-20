@@ -35,6 +35,12 @@ let PensumService = class PensumService {
     findAll() {
         return this.pensumRepository.find({ relations: ['semestre', 'carrera', 'curso'] });
     }
+    findByCarrera(idCarrera) {
+        return this.pensumRepository.find({
+            where: { carrera: { id: idCarrera } },
+            relations: ['semestre', 'carrera', 'curso'],
+        });
+    }
     findOne(id) {
         return this.pensumRepository.findOne({ where: { id }, relations: ['semestre', 'carrera', 'curso'] });
     }

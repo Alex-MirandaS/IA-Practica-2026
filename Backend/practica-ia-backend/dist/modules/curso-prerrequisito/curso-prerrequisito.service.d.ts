@@ -7,6 +7,7 @@ export declare class CursoPrerrequisitoService {
     constructor(repository: Repository<CursoPrerrequisito>);
     create(dto: CreateCursoPrerrequisitoDto): Promise<CursoPrerrequisito>;
     findAll(): Promise<CursoPrerrequisito[]>;
+    findByPensum(idPensum: number): Promise<CursoPrerrequisito[]>;
     findOne(id: number): Promise<CursoPrerrequisito | null>;
     update(id: number, dto: UpdateCursoPrerrequisitoDto): Promise<CursoPrerrequisito | null>;
     remove(id: number): Promise<import("typeorm").DeleteResult>;

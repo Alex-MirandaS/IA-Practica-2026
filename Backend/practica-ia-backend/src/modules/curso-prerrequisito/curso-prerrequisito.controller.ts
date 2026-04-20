@@ -21,6 +21,13 @@ export class CursoPrerrequisitoController {
     return this.service.findAll();
   }
 
+  @Get('pensum/:idPensum')
+  @ApiOperation({ summary: 'Listar registros por id_pensum' })
+  @ApiParam({ name: 'idPensum', type: Number })
+  findByPensum(@Param('idPensum') idPensum: string) {
+    return this.service.findByPensum(+idPensum);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Obtener registro por id' })
   @ApiParam({ name: 'id', type: Number })

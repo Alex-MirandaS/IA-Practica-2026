@@ -1,12 +1,14 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import {
   AcademicPerformanceSummary,
   ApiMessage,
-  FileUploadRequest,
+  CareerOption,
   GeneratedSchedule,
   PensumCourse,
+  PensumCareerApiItem,
+  PensumPrerequisiteApiItem,
   RepetitionItem,
   ScheduleGenerationRequest,
 } from '../models/academic.models';
@@ -15,16 +17,65 @@ import {
   providedIn: 'root',
 })
 export class AcademicApiService {
-  private readonly baseUrl = 'http://localhost:4001';
+  private readonly baseUrl = 'http://localhost:4001/api';
 
   constructor(private readonly http: HttpClient) {}
 
-  uploadBulkData(target: string, payload: FileUploadRequest): Observable<ApiMessage> {
-    return this.http.post<ApiMessage>(`${this.baseUrl}/import-csv/${target}`, payload);
+  uploadBulkData(target: string, file: File): Observable<ApiMessage> {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+
+    return this.http.post<ApiMessage>(`${this.baseUrl}/import-csv/${target}`, formData);
   }
 
-  getPensum(): Observable<PensumCourse[]> {
-    return this.http.get<PensumCourse[]>(`${this.baseUrl}/pensum`);
+  getCareers(): Observable<CareerOption[]> {
+    return this.http.get<Array<Record<string, unknown>>>(`${this.baseUrl}/carrera`).pipe(
+      map((rows) =>
+        (Array.isArray(rows) ? rows : [])
+          .map((row) => {
+            const idRaw = row['id'] ?? row['id_carrera'] ?? row['carreraId'];
+            const nombreRaw = row['nombre'] ?? row['nombre_carrera'] ?? row['carrera'];
+            const codigoRaw = row['codigo'] ?? row['codigo_carrera'];
+
+            const id = Number(idRaw);
+            const nombre = typeof nombreRaw === 'string' ? nombreRaw.trim() : '';
+            const codigo = typeof codigoRaw === 'string' ? codigoRaw.trim() : undefined;
+
+            if (!Number.isFinite(id) || !nombre) {
+              return null;
+            }
+
+            return { id, nombre, codigo } as CareerOption;
+          })
+          .filter((row): row is CareerOption => row !== null),
+      ),
+    );
+  }
+
+  getPensum(careerId?: number): Observable<PensumCourse[]> {
+    if (!careerId) {
+      const params = undefined;
+      return this.http.get<PensumCourse[]>(`${this.baseUrl}/pensum`, { params });
+    }
+
+    return this.http.get<PensumCareerApiItem[]>(`${this.baseUrl}/pensum/carrera/${careerId}`).pipe(
+      map((rows) =>
+        (Array.isArray(rows) ? rows : []).map((row) => ({
+          id: row.id,
+          codigo: String(row.curso?.codigo ?? '').trim(),
+          nombre: String(row.curso?.nombre ?? '').trim(),
+          creditos: Number(row.creditos) || 0,
+          semestre: Number(row.semestre?.id) || 0,
+          idCarrera: row.carrera?.id,
+          carrera: row.carrera?.nombre,
+          area: row.obligatorio ? 'Obligatorio' : 'Optativo',
+        })),
+      ),
+    );
+  }
+
+  getPensumPrerequisites(pensumId: number): Observable<PensumPrerequisiteApiItem[]> {
+    return this.http.get<PensumPrerequisiteApiItem[]>(`${this.baseUrl}/curso-prerrequisito/pensum/${pensumId}`);
   }
 
   generateCustomSchedule(request: ScheduleGenerationRequest): Observable<GeneratedSchedule> {

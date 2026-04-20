@@ -32,6 +32,12 @@ let CursoPrerrequisitoService = class CursoPrerrequisitoService {
     findAll() {
         return this.repository.find({ relations: ['pensum', 'prerrequisito'] });
     }
+    findByPensum(idPensum) {
+        return this.repository.find({
+            where: { pensum: { id: idPensum } },
+            relations: ['pensum', 'prerrequisito'],
+        });
+    }
     findOne(id) {
         return this.repository.findOne({ where: { id }, relations: ['pensum', 'prerrequisito'] });
     }

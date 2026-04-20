@@ -7,6 +7,7 @@ export declare class PensumService {
     constructor(pensumRepository: Repository<Pensum>);
     create(createPensumDto: CreatePensumDto): Promise<Pensum>;
     findAll(): Promise<Pensum[]>;
+    findByCarrera(idCarrera: number): Promise<Pensum[]>;
     findOne(id: number): Promise<Pensum | null>;
     update(id: number, updatePensumDto: UpdatePensumDto): Promise<Pensum | null>;
     remove(id: number): Promise<import("typeorm").DeleteResult>;

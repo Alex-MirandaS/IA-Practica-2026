@@ -6,6 +6,7 @@ export declare class PensumController {
     constructor(pensumService: PensumService);
     create(createPensumDto: CreatePensumDto): Promise<import("./entities/pensum.entity").Pensum>;
     findAll(): Promise<import("./entities/pensum.entity").Pensum[]>;
+    findByCarrera(idCarrera: string): Promise<import("./entities/pensum.entity").Pensum[]>;
     findOne(id: string): Promise<import("./entities/pensum.entity").Pensum | null>;
     update(id: string, updatePensumDto: UpdatePensumDto): Promise<import("./entities/pensum.entity").Pensum | null>;
     remove(id: string): Promise<import("typeorm").DeleteResult>;

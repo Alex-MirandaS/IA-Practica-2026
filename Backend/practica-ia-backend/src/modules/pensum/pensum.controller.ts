@@ -21,6 +21,13 @@ export class PensumController {
     return this.pensumService.findAll();
   }
 
+  @Get('carrera/:idCarrera')
+  @ApiOperation({ summary: 'Listar pensum por carrera' })
+  @ApiParam({ name: 'idCarrera', type: Number })
+  findByCarrera(@Param('idCarrera') idCarrera: string) {
+    return this.pensumService.findByCarrera(+idCarrera);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Obtener registro por id' })
   @ApiParam({ name: 'id', type: Number })

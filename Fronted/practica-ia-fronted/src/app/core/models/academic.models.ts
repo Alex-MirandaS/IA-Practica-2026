@@ -5,19 +5,59 @@ export interface ApiMessage {
 }
 
 export interface PensumCourse {
+  id?: number;
   codigo: string;
   nombre: string;
   creditos: number;
   semestre: number;
+  idCarrera?: number;
+  id_carrera?: number;
+  carreraId?: number;
+  carrera?: string;
   prerequisitos?: string[];
   area?: string;
   estado?: 'Pendiente' | 'Aprobada' | 'En curso';
 }
 
-export interface FileUploadRequest {
-  fileName: string;
-  payloadBase64: string;
-  type: string;
+export interface PensumCareerApiItem {
+  id: number;
+  obligatorio: boolean;
+  creditos: number;
+  semestre: {
+    id: number;
+    semestre: string;
+  };
+  carrera: {
+    id: number;
+    nombre: string;
+  };
+  curso: {
+    id: number;
+    codigo?: string | null;
+    nombre: string;
+    id_externo?: number | null;
+  };
+}
+
+export interface PensumPrerequisiteApiItem {
+  id: number;
+  pensum: {
+    id: number;
+    obligatorio: boolean;
+    creditos: number;
+  };
+  prerrequisito: {
+    id: number;
+    codigo?: string | null;
+    nombre: string;
+    id_externo?: number | null;
+  };
+}
+
+export interface CareerOption {
+  id: number;
+  nombre: string;
+  codigo?: string;
 }
 
 export interface StudentProfile {

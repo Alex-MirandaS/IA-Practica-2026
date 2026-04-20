@@ -29,6 +29,9 @@ let CursoPrerrequisitoController = class CursoPrerrequisitoController {
     findAll() {
         return this.service.findAll();
     }
+    findByPensum(idPensum) {
+        return this.service.findByPensum(+idPensum);
+    }
     findOne(id) {
         return this.service.findOne(+id);
     }
@@ -55,6 +58,15 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], CursoPrerrequisitoController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('pensum/:idPensum'),
+    (0, swagger_1.ApiOperation)({ summary: 'Listar registros por id_pensum' }),
+    (0, swagger_1.ApiParam)({ name: 'idPensum', type: Number }),
+    __param(0, (0, common_1.Param)('idPensum')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], CursoPrerrequisitoController.prototype, "findByPensum", null);
 __decorate([
     (0, common_1.Get)(':id'),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener registro por id' }),

@@ -72,11 +72,14 @@ let ImportCsvService = class ImportCsvService {
         const repository = manager.getRepository(curso_entity_1.Curso);
         for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
-            const codigo = this.requiredValueFromAliases(row, ['codigo', 'cod', 'codigo_curso'], i);
+            const codigoRaw = this.requiredValueFromAliases(row, ['codigo', 'cod', 'codigo_curso'], i);
+            const codigo = this.normalizeCursoCodigo(codigoRaw);
             const nombre = this.requiredValueFromAliases(row, ['nombre', 'curso', 'nombre_curso'], i);
             const idExterno = this.optionalIntByAliases(row, ['id_externo', 'idexterno', 'externo'], 'id_externo', i);
             const idDirecto = this.optionalIntByAliases(row, ['id'], 'id', i);
-            const current = idDirecto != null ? await repository.findOne({ where: { id: idDirecto } }) : await repository.findOne({ where: { codigo } });
+            const currentByCodigo = await repository.findOne({ where: { codigo } });
+            const currentById = idDirecto != null ? await repository.findOne({ where: { id: idDirecto } }) : null;
+            const current = currentByCodigo ?? currentById;
             const payload = {
                 codigo,
                 nombre,
@@ -328,22 +331,14 @@ let ImportCsvService = class ImportCsvService {
     }
     requiredIntFromAliases(row, aliases, field, index) {
         const value = this.requiredValueFromAliases(row, aliases, index);
-        const parsed = Number.parseInt(value, 10);
-        if (Number.isNaN(parsed)) {
-            throw new common_1.BadRequestException(`Fila ${index + 2}: ${field} debe ser numerico`);
-        }
-        return parsed;
+        return this.parseIntegerValue(value, field, index);
     }
     optionalIntByAliases(row, aliases, field, index) {
         const value = this.findValueByAliases(row, aliases);
         if (!value || value.trim().length === 0) {
             return undefined;
         }
-        const parsed = Number.parseInt(value, 10);
-        if (Number.isNaN(parsed)) {
-            throw new common_1.BadRequestException(`Fila ${index + 2}: ${field} debe ser numerico`);
-        }
-        return parsed;
+        return this.parseIntegerValue(value, field, index);
     }
     optionalDecimalByAliases(row, aliases, field, index) {
         const value = this.findValueByAliases(row, aliases);
@@ -419,12 +414,13 @@ let ImportCsvService = class ImportCsvService {
         if (!semestreRaw) {
             return undefined;
         }
+        const semestreValue = this.normalizeIntegerLikeValue(semestreRaw);
         const repository = manager.getRepository(semestre_entity_1.Semestre);
-        const current = await repository.findOne({ where: { semestre: semestreRaw } });
+        const current = await repository.findOne({ where: { semestre: semestreValue } });
         if (current) {
             return current.id;
         }
-        const created = await repository.save(repository.create({ semestre: semestreRaw }));
+        const created = await repository.save(repository.create({ semestre: semestreValue }));
         return created.id;
     }
     async resolveCurso(row, index, manager, options = {}) {
@@ -435,7 +431,8 @@ let ImportCsvService = class ImportCsvService {
             await this.assertForeignKey(index, idCurso, idAliases[0], curso_entity_1.Curso, manager);
             return idCurso;
         }
-        const codigo = this.findValueByAliases(row, lookupAliases.filter((alias) => ['codigo', 'codigo_curso', 'cod'].includes(alias)))?.trim();
+        const codigoRaw = this.findValueByAliases(row, lookupAliases.filter((alias) => ['codigo', 'codigo_curso', 'cod'].includes(alias)))?.trim();
+        const codigo = codigoRaw ? this.normalizeCursoCodigo(codigoRaw) : undefined;
         const nombre = this.findValueByAliases(row, lookupAliases.filter((alias) => ['curso', 'nombre_curso', 'nombre'].includes(alias)))?.trim();
         if (!codigo && !nombre) {
             if (options.required) {
@@ -456,6 +453,31 @@ let ImportCsvService = class ImportCsvService {
         const nombreFinal = nombre ?? codigoFinal;
         const created = await repository.save(repository.create({ codigo: codigoFinal, nombre: nombreFinal }));
         return created.id;
+    }
+    normalizeCursoCodigo(codigo) {
+        const normalized = codigo.trim();
+        if (/^-?\d+\.0+$/.test(normalized)) {
+            return normalized.replace(/\.0+$/, '');
+        }
+        return normalized;
+    }
+    normalizeIntegerLikeValue(value) {
+        const normalized = value.trim().replace(',', '.');
+        if (/^-?\d+\.0+$/.test(normalized)) {
+            return normalized.replace(/\.0+$/, '');
+        }
+        return normalized;
+    }
+    parseIntegerValue(value, field, index) {
+        const normalized = this.normalizeIntegerLikeValue(value);
+        if (!/^-?\d+$/.test(normalized)) {
+            throw new common_1.BadRequestException(`Fila ${index + 2}: ${field} debe ser un numero entero`);
+        }
+        const parsed = Number.parseInt(normalized, 10);
+        if (Number.isNaN(parsed)) {
+            throw new common_1.BadRequestException(`Fila ${index + 2}: ${field} debe ser un numero entero`);
+        }
+        return parsed;
     }
     async resolveEstudiante(row, index, manager) {
         const idEstudiante = this.optionalIntByAliases(row, ['id_estudiante'], 'id_estudiante', index);

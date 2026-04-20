@@ -69,12 +69,15 @@ export class ImportCsvService {
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
-      const codigo = this.requiredValueFromAliases(row, ['codigo', 'cod', 'codigo_curso'], i);
+      const codigoRaw = this.requiredValueFromAliases(row, ['codigo', 'cod', 'codigo_curso'], i);
+      const codigo = this.normalizeCursoCodigo(codigoRaw);
       const nombre = this.requiredValueFromAliases(row, ['nombre', 'curso', 'nombre_curso'], i);
       const idExterno = this.optionalIntByAliases(row, ['id_externo', 'idexterno', 'externo'], 'id_externo', i);
 
       const idDirecto = this.optionalIntByAliases(row, ['id'], 'id', i);
-      const current = idDirecto != null ? await repository.findOne({ where: { id: idDirecto } }) : await repository.findOne({ where: { codigo } });
+      const currentByCodigo = await repository.findOne({ where: { codigo } });
+      const currentById = idDirecto != null ? await repository.findOne({ where: { id: idDirecto } }) : null;
+      const current = currentByCodigo ?? currentById;
 
       const payload: Partial<Curso> = {
         codigo,
@@ -382,12 +385,7 @@ export class ImportCsvService {
 
   private requiredIntFromAliases(row: CsvRow, aliases: string[], field: string, index: number): number {
     const value = this.requiredValueFromAliases(row, aliases, index);
-    const parsed = Number.parseInt(value, 10);
-    if (Number.isNaN(parsed)) {
-      throw new BadRequestException(`Fila ${index + 2}: ${field} debe ser numerico`);
-    }
-
-    return parsed;
+    return this.parseIntegerValue(value, field, index);
   }
 
   private optionalIntByAliases(row: CsvRow, aliases: string[], field: string, index: number): number | undefined {
@@ -396,12 +394,7 @@ export class ImportCsvService {
       return undefined;
     }
 
-    const parsed = Number.parseInt(value, 10);
-    if (Number.isNaN(parsed)) {
-      throw new BadRequestException(`Fila ${index + 2}: ${field} debe ser numerico`);
-    }
-
-    return parsed;
+    return this.parseIntegerValue(value, field, index);
   }
 
   private optionalDecimalByAliases(row: CsvRow, aliases: string[], field: string, index: number): number | undefined {
@@ -506,13 +499,15 @@ export class ImportCsvService {
       return undefined;
     }
 
+    const semestreValue = this.normalizeIntegerLikeValue(semestreRaw);
+
     const repository = manager.getRepository(Semestre);
-    const current = await repository.findOne({ where: { semestre: semestreRaw } });
+    const current = await repository.findOne({ where: { semestre: semestreValue } });
     if (current) {
       return current.id;
     }
 
-    const created = await repository.save(repository.create({ semestre: semestreRaw }));
+    const created = await repository.save(repository.create({ semestre: semestreValue }));
     return created.id;
   }
 
@@ -530,7 +525,11 @@ export class ImportCsvService {
       return idCurso;
     }
 
-    const codigo = this.findValueByAliases(row, lookupAliases.filter((alias) => ['codigo', 'codigo_curso', 'cod'].includes(alias)))?.trim();
+    const codigoRaw = this.findValueByAliases(
+      row,
+      lookupAliases.filter((alias) => ['codigo', 'codigo_curso', 'cod'].includes(alias)),
+    )?.trim();
+    const codigo = codigoRaw ? this.normalizeCursoCodigo(codigoRaw) : undefined;
     const nombre = this.findValueByAliases(row, lookupAliases.filter((alias) => ['curso', 'nombre_curso', 'nombre'].includes(alias)))?.trim();
 
     if (!codigo && !nombre) {
@@ -556,6 +555,40 @@ export class ImportCsvService {
     const nombreFinal = nombre ?? codigoFinal;
     const created = await repository.save(repository.create({ codigo: codigoFinal, nombre: nombreFinal }));
     return created.id;
+  }
+
+  private normalizeCursoCodigo(codigo: string): string {
+    const normalized = codigo.trim();
+
+    // Evita codigos como 177.0 cuando el valor representa un entero.
+    if (/^-?\d+\.0+$/.test(normalized)) {
+      return normalized.replace(/\.0+$/, '');
+    }
+
+    return normalized;
+  }
+
+  private normalizeIntegerLikeValue(value: string): string {
+    const normalized = value.trim().replace(',', '.');
+    if (/^-?\d+\.0+$/.test(normalized)) {
+      return normalized.replace(/\.0+$/, '');
+    }
+
+    return normalized;
+  }
+
+  private parseIntegerValue(value: string, field: string, index: number): number {
+    const normalized = this.normalizeIntegerLikeValue(value);
+    if (!/^-?\d+$/.test(normalized)) {
+      throw new BadRequestException(`Fila ${index + 2}: ${field} debe ser un numero entero`);
+    }
+
+    const parsed = Number.parseInt(normalized, 10);
+    if (Number.isNaN(parsed)) {
+      throw new BadRequestException(`Fila ${index + 2}: ${field} debe ser un numero entero`);
+    }
+
+    return parsed;
   }
 
   private async resolveEstudiante(row: CsvRow, index: number, manager: EntityManager): Promise<number> {

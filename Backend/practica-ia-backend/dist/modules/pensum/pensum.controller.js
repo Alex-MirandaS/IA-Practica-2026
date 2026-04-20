@@ -29,6 +29,9 @@ let PensumController = class PensumController {
     findAll() {
         return this.pensumService.findAll();
     }
+    findByCarrera(idCarrera) {
+        return this.pensumService.findByCarrera(+idCarrera);
+    }
     findOne(id) {
         return this.pensumService.findOne(+id);
     }
@@ -55,6 +58,15 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], PensumController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('carrera/:idCarrera'),
+    (0, swagger_1.ApiOperation)({ summary: 'Listar pensum por carrera' }),
+    (0, swagger_1.ApiParam)({ name: 'idCarrera', type: Number }),
+    __param(0, (0, common_1.Param)('idCarrera')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], PensumController.prototype, "findByCarrera", null);
 __decorate([
     (0, common_1.Get)(':id'),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener registro por id' }),

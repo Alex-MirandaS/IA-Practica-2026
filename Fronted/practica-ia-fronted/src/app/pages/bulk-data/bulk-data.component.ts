@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, Validators } from '@angular/forms';
 import { AcademicApiService } from '../../core/services/academic-api.service';
-import { ApiMessage, FileUploadRequest } from '../../core/models/academic.models';
 
 @Component({
   selector: 'app-bulk-data',
@@ -11,13 +11,15 @@ import { ApiMessage, FileUploadRequest } from '../../core/models/academic.models
 export class BulkDataComponent {
   selectedFileName = 'Ningún archivo seleccionado';
   isLoading = false;
-  response: ApiMessage | null = null;
-  private payloadBase64 = '';
-  private payloadType = '';
+  isPopupVisible = false;
+  popupSuccess = false;
+  popupTitle = '';
+  popupMessage = '';
+  @ViewChild('datasetFileInput') datasetFileInput?: ElementRef<HTMLInputElement>;
+  private selectedFile: File | null = null;
 
   readonly form = this.fb.group({
-    datasetName: ['horario-estudiante', Validators.required],
-    notes: [''],
+    datasetName: ['pensum', Validators.required],
   });
 
   constructor(
@@ -31,54 +33,97 @@ export class BulkDataComponent {
 
     if (!file) {
       this.selectedFileName = 'Ningún archivo seleccionado';
-      this.payloadBase64 = '';
-      this.payloadType = '';
+      this.selectedFile = null;
       return;
     }
 
+    this.selectedFile = file;
     this.selectedFileName = file.name;
-    this.payloadType = file.type || 'application/octet-stream';
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      this.payloadBase64 = typeof result === 'string' ? result.split(',')[1] ?? '' : '';
-    };
-    reader.readAsDataURL(file);
   }
 
   upload(): void {
-    if (!this.form.valid || !this.payloadBase64) {
-      this.response = {
-        success: false,
-        message: 'Selecciona un archivo válido antes de enviar.',
-      };
+    if (!this.form.valid || !this.selectedFile) {
+      this.openPopup(false, 'Carga fallida', 'Selecciona un archivo valido antes de enviar.');
       return;
     }
 
-    const request: FileUploadRequest = {
-      fileName: this.selectedFileName,
-      payloadBase64: this.payloadBase64,
-      type: this.payloadType,
-    };
-
     this.isLoading = true;
-    this.response = null;
 
-    const target = (this.form.value.datasetName ?? 'pensum').trim();
+    const target = this.form.value.datasetName ?? 'pensum';
 
-    this.api.uploadBulkData(target, request).subscribe({
+    console.info('[BulkData] Intentando conectar con backend...', {
+      endpoint: `http://localhost:4001/api/import-csv/${target}`,
+      fileName: this.selectedFileName,
+      fileType: this.selectedFile.type || 'application/octet-stream',
+    });
+
+    this.api.uploadBulkData(target, this.selectedFile).subscribe({
       next: (result) => {
-        this.response = result;
+        console.info('[BulkData] Conexion exitosa con backend. Respuesta recibida.', result);
+        const isSuccess = result.success ?? true;
+        const message = result.message?.trim() || 'La carga de archivo fue exitosa.';
+
+        if (isSuccess) {
+          this.openPopup(true, 'Carga exitosa', message);
+          this.resetSelectedFile();
+        } else {
+          this.openPopup(false, 'Carga fallida', message);
+        }
+
         this.isLoading = false;
       },
-      error: () => {
-        this.response = {
-          success: false,
-          message: 'No fue posible conectar con el backend en http://localhost:4001.',
-        };
+      error: (error: HttpErrorResponse) => {
+        console.error('[BulkData] Error al conectar con backend.', {
+          status: error.status,
+          statusText: error.statusText,
+          url: error.url,
+          message: error.message,
+          backendPayload: error.error,
+        });
+
+        this.openPopup(false, 'Carga fallida', this.getHttpErrorMessage(error));
         this.isLoading = false;
       },
     });
+  }
+
+  closePopup(): void {
+    this.isPopupVisible = false;
+  }
+
+  private openPopup(success: boolean, title: string, message: string): void {
+    this.popupSuccess = success;
+    this.popupTitle = title;
+    this.popupMessage = message;
+    this.isPopupVisible = true;
+  }
+
+  private resetSelectedFile(): void {
+    this.selectedFile = null;
+    this.selectedFileName = 'Ningún archivo seleccionado';
+
+    if (this.datasetFileInput?.nativeElement) {
+      this.datasetFileInput.nativeElement.value = '';
+    }
+  }
+
+  private getHttpErrorMessage(error: HttpErrorResponse): string {
+    const backendPayload = error.error as { message?: string | string[] } | string | null;
+
+    if (backendPayload && typeof backendPayload === 'object' && 'message' in backendPayload) {
+      const message = backendPayload.message;
+      if (Array.isArray(message) && message.length > 0) {
+        return message.join(' ');
+      }
+      if (typeof message === 'string' && message.trim()) {
+        return message;
+      }
+    }
+
+    if (typeof backendPayload === 'string' && backendPayload.trim()) {
+      return backendPayload;
+    }
+
+    return 'No fue posible conectar con el backend en http://localhost:4001.';
   }
 }

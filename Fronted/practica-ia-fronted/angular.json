@@ -63,7 +63,8 @@
               "browserTarget": "practica-ia-fronted:build:production"
             },
             "development": {
-              "browserTarget": "practica-ia-fronted:build:development"
+              "browserTarget": "practica-ia-fronted:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"

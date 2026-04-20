@@ -24,9 +24,10 @@ let ImportCsvController = class ImportCsvController {
     constructor(importCsvService) {
         this.importCsvService = importCsvService;
     }
-    async import(params, file) {
+    async import(params, files) {
+        const file = files?.file?.[0] ?? files?.archivo?.[0] ?? files?.csv?.[0];
         if (!file?.buffer) {
-            throw new common_1.BadRequestException('No se recibio el archivo CSV');
+            throw new common_1.BadRequestException('Debe enviar un archivo CSV en multipart/form-data (campo: file, archivo o csv)');
         }
         return this.importCsvService.importByTarget(params.target, file.buffer);
     }
@@ -51,18 +52,27 @@ __decorate([
                     type: 'string',
                     format: 'binary',
                 },
+                archivo: {
+                    type: 'string',
+                    format: 'binary',
+                },
+                csv: {
+                    type: 'string',
+                    format: 'binary',
+                },
             },
-            required: ['file'],
         },
     }),
     (0, swagger_1.ApiResponse)({ status: 201, type: import_result_dto_1.ImportResultDto }),
     (0, swagger_1.ApiResponse)({ status: 400, description: 'Archivo CSV invalido o datos inconsistentes' }),
     (0, common_1.Post)(':target'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileFieldsInterceptor)([
+        { name: 'file', maxCount: 1 },
+        { name: 'archivo', maxCount: 1 },
+        { name: 'csv', maxCount: 1 },
+    ])),
     __param(0, (0, common_1.Param)()),
-    __param(1, (0, common_1.UploadedFile)(new common_1.ParseFilePipe({
-        fileIsRequired: true,
-    }))),
+    __param(1, (0, common_1.UploadedFiles)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [import_target_dto_1.ImportTargetParamDto, Object]),
     __metadata("design:returntype", Promise)

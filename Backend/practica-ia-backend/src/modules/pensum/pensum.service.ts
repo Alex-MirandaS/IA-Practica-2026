@@ -31,6 +31,13 @@ export class PensumService {
     return this.pensumRepository.find({ relations: ['semestre', 'carrera', 'curso'] });
   }
 
+  findByCarrera(idCarrera: number) {
+    return this.pensumRepository.find({
+      where: { carrera: { id: idCarrera } },
+      relations: ['semestre', 'carrera', 'curso'],
+    });
+  }
+
   findOne(id: number) {
     return this.pensumRepository.findOne({ where: { id }, relations: ['semestre', 'carrera', 'curso'] });
   }

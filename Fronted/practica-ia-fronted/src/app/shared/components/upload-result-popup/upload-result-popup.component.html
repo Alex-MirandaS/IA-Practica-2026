@@ -1,0 +1,21 @@
+<div
+  *ngIf="visible"
+  class="popup-backdrop"
+  (click)="onBackdropClick($event)"
+  role="dialog"
+  aria-modal="true"
+  aria-live="polite"
+>
+  <div class="popup-card" [ngClass]="success ? 'popup-card--success' : 'popup-card--error'">
+    <div class="popup-header">
+      <mat-icon>{{ success ? 'check_circle' : 'error' }}</mat-icon>
+      <h3>{{ title }}</h3>
+    </div>
+
+    <p class="popup-message">{{ message }}</p>
+
+    <div class="popup-actions">
+      <button mat-raised-button color="primary" type="button" (click)="onClose()">Cerrar</button>
+    </div>
+  </div>
+</div>

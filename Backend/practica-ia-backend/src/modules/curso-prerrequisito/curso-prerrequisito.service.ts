@@ -26,6 +26,13 @@ export class CursoPrerrequisitoService {
     return this.repository.find({ relations: ['pensum', 'prerrequisito'] });
   }
 
+  findByPensum(idPensum: number) {
+    return this.repository.find({
+      where: { pensum: { id: idPensum } },
+      relations: ['pensum', 'prerrequisito'],
+    });
+  }
+
   findOne(id: number) {
     return this.repository.findOne({ where: { id }, relations: ['pensum', 'prerrequisito'] });
   }

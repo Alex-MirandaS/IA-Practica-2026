@@ -26,6 +26,9 @@ export declare class ImportCsvService {
     private resolveCarrera;
     private resolveSemestre;
     private resolveCurso;
+    private normalizeCursoCodigo;
+    private normalizeIntegerLikeValue;
+    private parseIntegerValue;
     private resolveEstudiante;
     private resolveCiclo;
     private resolvePensumReference;

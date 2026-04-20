@@ -8,32 +8,47 @@
 
 <mat-card class="panel">
   <form [formGroup]="form" class="form" (ngSubmit)="upload()">
-    <mat-form-field appearance="outline">
-      <mat-label>Nombre del conjunto de datos</mat-label>
-      <input matInput formControlName="datasetName" />
-    </mat-form-field>
-
-    <mat-form-field appearance="outline">
-      <mat-label>Observaciones</mat-label>
-      <textarea matInput formControlName="notes" rows="4"></textarea>
-    </mat-form-field>
-
-    <div class="file-picker">
-      <label class="file-picker__label" for="datasetFile">Archivo JSON, CSV o Excel</label>
-      <input id="datasetFile" type="file" (change)="onFileSelected($event)" />
-      <span>{{ selectedFileName }}</span>
+    <div class="selector-group">
+      <mat-icon class="selector-icon">database</mat-icon>
+      <mat-form-field appearance="outline" class="selector-field">
+        <mat-label>Conjunto de datos a importar</mat-label>
+        <mat-select formControlName="datasetName">
+          <mat-option value="cursos">Cursos</mat-option>
+          <mat-option value="carreras">Carreras</mat-option>
+          <mat-option value="pensum">Pensum</mat-option>
+          <mat-option value="curso-prerrequisitos">Curso Prerrequisitos</mat-option>
+          <mat-option value="historial-academico">Historial Académico</mat-option>
+          <mat-option value="historial">Historial</mat-option>
+          <mat-option value="estudiantes">Estudiantes</mat-option>
+        </mat-select>
+      </mat-form-field>
     </div>
 
-    <button mat-raised-button color="primary" type="submit" [disabled]="isLoading">
+    <div class="file-picker">
+      <mat-icon class="file-picker__icon">upload_file</mat-icon>
+      <h3 class="file-picker__title">Importar archivo</h3>
+      <p class="file-picker__subtitle">Arrastra tu archivo aquí o haz clic para seleccionar</p>
+      <input
+        #datasetFileInput
+        id="datasetFile"
+        type="file"
+        (change)="onFileSelected($event)"
+        class="file-picker__input"
+      />
+      <label for="datasetFile" class="file-picker__label">Seleccionar archivo</label>
+      <span class="file-picker__filename">{{ selectedFileName }}</span>
+    </div>
+
+    <button mat-raised-button color="primary" type="submit" [disabled]="isLoading" class="submit-button">
       {{ isLoading ? 'Enviando...' : 'Cargar datos' }}
     </button>
   </form>
 </mat-card>
 
-<mat-card class="panel" *ngIf="response">
-  <mat-card-title>Respuesta del backend</mat-card-title>
-  <mat-card-content>
-    <p>{{ response.message }}</p>
-    <p class="muted" *ngIf="response.detail">{{ response.detail }}</p>
-  </mat-card-content>
-</mat-card>
+<app-upload-result-popup
+  [visible]="isPopupVisible"
+  [success]="popupSuccess"
+  [title]="popupTitle"
+  [message]="popupMessage"
+  (close)="closePopup()"
+></app-upload-result-popup>

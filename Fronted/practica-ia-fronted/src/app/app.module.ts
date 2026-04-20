@@ -13,6 +13,7 @@ import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { PerformanceComponent } from './pages/performance/performance.component';
 import { PensumComponent } from './pages/pensum/pensum.component';
 import { RepetitionsComponent } from './pages/repetitions/repetitions.component';
+import { UploadResultPopupComponent } from './shared/components/upload-result-popup/upload-result-popup.component';
 
 @NgModule({
   declarations: [
@@ -23,6 +24,7 @@ import { RepetitionsComponent } from './pages/repetitions/repetitions.component'
     CustomScheduleComponent,
     PerformanceComponent,
     RepetitionsComponent,
+    UploadResultPopupComponent,
   ],
   imports: [
     BrowserModule,

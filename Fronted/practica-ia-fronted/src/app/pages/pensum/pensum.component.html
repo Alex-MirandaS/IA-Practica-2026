@@ -2,9 +2,30 @@
   <div>
     <span class="eyebrow">Pensum</span>
     <h2>Visualización del plan de estudios</h2>
-    <p>Consulta la estructura académica cargada desde el backend y revisa sus requisitos.</p>
+    <p>Selecciona una carrera y consulta su pensum en una vista visual por semestres.</p>
   </div>
 </section>
+
+<mat-card class="panel selector-panel">
+  <mat-card-content>
+    <div class="selector-wrap">
+      <mat-icon>school</mat-icon>
+      <mat-form-field appearance="outline" class="career-field">
+        <mat-label>Carrera</mat-label>
+        <mat-select
+          [value]="selectedCareerId"
+          [disabled]="isLoadingCareers"
+          (selectionChange)="onCareerChange($event.value)"
+        >
+          <mat-option [value]="null" *ngIf="careers.length === 0">Sin carreras disponibles</mat-option>
+          <mat-option *ngFor="let career of careers" [value]="career.id">
+            {{ career.nombre }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </mat-card-content>
+</mat-card>
 
 <mat-card class="panel" *ngIf="errorMessage">
   <mat-card-content>{{ errorMessage }}</mat-card-content>
@@ -12,46 +33,50 @@
 
 <mat-card class="panel">
   <mat-card-content>
-    <div class="table-wrap" *ngIf="!isLoading; else loading">
-      <table mat-table [dataSource]="courses" class="mat-elevation-z1">
-        <ng-container matColumnDef="codigo">
-          <th mat-header-cell *matHeaderCellDef>Código</th>
-          <td mat-cell *matCellDef="let course">{{ course.codigo }}</td>
-        </ng-container>
+    <div *ngIf="!isLoading; else loading">
+      <ng-container *ngIf="selectedCareerId !== null; else noCareerSelected">
+        <div class="pensum-header" *ngIf="semesterGroups.length > 0">
+          <h3>{{ selectedCareerName }}</h3>
+          <span>{{ courses.length }} cursos</span>
+        </div>
 
-        <ng-container matColumnDef="nombre">
-          <th mat-header-cell *matHeaderCellDef>Curso</th>
-          <td mat-cell *matCellDef="let course">{{ course.nombre }}</td>
-        </ng-container>
+        <div class="semester-grid" *ngIf="semesterGroups.length > 0; else emptyState">
+          <section class="semester-column" *ngFor="let group of semesterGroups">
+            <header class="semester-title">Semestre {{ group.semester }}</header>
 
-        <ng-container matColumnDef="creditos">
-          <th mat-header-cell *matHeaderCellDef>Créditos</th>
-          <td mat-cell *matCellDef="let course">{{ course.creditos }}</td>
-        </ng-container>
+            <article class="course-card" *ngFor="let course of group.courses">
+              <div class="course-top">
+                <span class="course-code">{{ course.codigo }}</span>
+                <span class="course-credits">{{ course.creditos }} cr</span>
+              </div>
+              <h4>{{ course.nombre }}</h4>
+              <p *ngIf="course.prerequisitos?.length">Prerequisitos: {{ course.prerequisitos?.join(', ') }}</p>
+              <p *ngIf="!course.prerequisitos?.length">Sin prerequisitos</p>
+              <span
+                class="area-chip"
+                *ngIf="course.area"
+                [ngClass]="{ 'area-chip--optative': course.area === 'Optativo' }"
+              >
+                {{ course.area }}
+              </span>
+            </article>
+          </section>
+        </div>
+      </ng-container>
 
-        <ng-container matColumnDef="semestre">
-          <th mat-header-cell *matHeaderCellDef>Semestre</th>
-          <td mat-cell *matCellDef="let course">{{ course.semestre }}</td>
-        </ng-container>
+      <ng-template #emptyState>
+        <div class="empty-state">
+          <mat-icon>info</mat-icon>
+          <p>No hay cursos cargados para la carrera seleccionada.</p>
+        </div>
+      </ng-template>
 
-        <ng-container matColumnDef="prerequisitos">
-          <th mat-header-cell *matHeaderCellDef>Prerrequisitos</th>
-          <td mat-cell *matCellDef="let course">{{ course.prerequisitos?.join(', ') || 'Sin prerrequisitos' }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="area">
-          <th mat-header-cell *matHeaderCellDef>Área</th>
-          <td mat-cell *matCellDef="let course">{{ course.area || '-' }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="estado">
-          <th mat-header-cell *matHeaderCellDef>Estado</th>
-          <td mat-cell *matCellDef="let course">{{ course.estado || 'Pendiente' }}</td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-      </table>
+      <ng-template #noCareerSelected>
+        <div class="empty-state">
+          <mat-icon>school</mat-icon>
+          <p>Selecciona una carrera para visualizar el pensum.</p>
+        </div>
+      </ng-template>
     </div>
 
     <ng-template #loading>
