@@ -21,6 +21,20 @@ export class HistorialAcademicoController {
     return this.service.findAll();
   }
 
+  @Get('estudiante/carnet/:carnet')
+  @ApiOperation({ summary: 'Listar historial academico por carnet de estudiante' })
+  @ApiParam({ name: 'carnet', type: String })
+  findByCarnet(@Param('carnet') carnet: string) {
+    return this.service.findByCarnet(carnet);
+  }
+
+  @Get('resumen/carnet/:carnet')
+  @ApiOperation({ summary: 'Calcular resumen academico por carnet' })
+  @ApiParam({ name: 'carnet', type: String })
+  findResumenByCarnet(@Param('carnet') carnet: string) {
+    return this.service.findResumenByCarnet(carnet);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Obtener registro por id' })
   @ApiParam({ name: 'id', type: Number })

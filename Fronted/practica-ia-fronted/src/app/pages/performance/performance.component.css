@@ -58,12 +58,95 @@
   border-radius: 20px;
 }
 
+.search-panel {
+  margin-bottom: 1.5rem;
+}
+
+.search-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  background: #f8fbff;
+  border: 1px solid #dbe7f4;
+  border-radius: 16px;
+  padding: 0.9rem;
+}
+
+.search-actions {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.carnet-field {
+  max-width: 520px;
+  min-width: 360px;
+  flex: 1;
+}
+
+.search-button {
+  min-height: 56px;
+  min-width: 190px;
+  border-radius: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.student-card {
+  margin-bottom: 1rem;
+}
+
+.student-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.student-grid span {
+  display: block;
+  color: #64748b;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.student-grid strong {
+  color: #0f172a;
+  font-size: 1rem;
+  word-break: break-word;
+}
+
+.search-error {
+  display: block;
+  margin-top: 0.5rem;
+}
+
 .table-wrap {
   overflow: auto;
 }
 
 table {
   width: 100%;
+}
+
+.status-badge {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status-passed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-failed {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .loading {
@@ -81,6 +164,24 @@ table {
 
 @media (max-width: 700px) {
   .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-actions {
+    justify-content: stretch;
+  }
+
+  .carnet-field {
+    max-width: 100%;
+    min-width: 100%;
+  }
+
+  .student-grid {
     grid-template-columns: 1fr;
   }
 }

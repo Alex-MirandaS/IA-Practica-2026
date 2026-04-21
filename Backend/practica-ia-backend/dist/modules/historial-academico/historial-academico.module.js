@@ -12,12 +12,14 @@ const typeorm_1 = require("@nestjs/typeorm");
 const historial_academico_entity_1 = require("./entities/historial-academico.entity");
 const historial_academico_service_1 = require("./historial-academico.service");
 const historial_academico_controller_1 = require("./historial-academico.controller");
+const estudiante_entity_1 = require("../estudiante/entities/estudiante.entity");
+const pensum_entity_1 = require("../pensum/entities/pensum.entity");
 let HistorialAcademicoModule = class HistorialAcademicoModule {
 };
 exports.HistorialAcademicoModule = HistorialAcademicoModule;
 exports.HistorialAcademicoModule = HistorialAcademicoModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([historial_academico_entity_1.HistorialAcademico])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([historial_academico_entity_1.HistorialAcademico, estudiante_entity_1.Estudiante, pensum_entity_1.Pensum])],
         controllers: [historial_academico_controller_1.HistorialAcademicoController],
         providers: [historial_academico_service_1.HistorialAcademicoService],
         exports: [historial_academico_service_1.HistorialAcademicoService],

@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import {
+  AcademicHistoryResponse,
   AcademicPerformanceSummary,
   ApiMessage,
   CareerOption,
@@ -92,5 +93,9 @@ export class AcademicApiService {
 
   getRepetitions(): Observable<RepetitionItem[]> {
     return this.http.get<RepetitionItem[]>(`${this.baseUrl}/control-repitencias`);
+  }
+
+  getAcademicHistory(carnet: string): Observable<AcademicHistoryResponse> {
+    return this.http.get<AcademicHistoryResponse>(`${this.baseUrl}/historial-academico/estudiante/carnet/${encodeURIComponent(carnet)}`);
   }
 }

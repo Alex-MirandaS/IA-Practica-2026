@@ -151,3 +151,61 @@ export interface RepetitionItem {
   ultimoEstado: string;
   recomendacion: string;
 }
+
+export interface AcademicHistoryItem {
+  id: number;
+  estudiante: {
+    id: number;
+    carnet: string;
+    nombre: string;
+    apellido: string;
+    correo: string;
+  };
+  curso: {
+    id: number;
+    codigo?: string | null;
+    nombre: string;
+    id_externo?: number | null;
+  };
+  nota: string;
+  aprobado: boolean;
+  anio: number;
+  ciclo: {
+    id: number;
+    ciclo: string;
+  };
+  intentos: number;
+}
+
+export interface AcademicHistoryAlertApiItem {
+  id_curso: number;
+  codigo: string;
+  nombre: string;
+  reprobados: number;
+  alerta: boolean;
+}
+
+export interface AcademicHistorySummaryApiItem {
+  cursos_aprobados: number;
+  cursos_reprobados: number;
+  porcentaje_aprobacion: number;
+  creditos_acumulados: number;
+  promedio_general: number | null;
+  promedio_limpio: number | null;
+  riesgo_repitencia: boolean;
+  nivel_riesgo_repitencia: string;
+  porcentaje_riesgo_repitencia: number;
+}
+
+export interface AcademicHistoryResponse {
+  estudiante: {
+    id: number;
+    carnet: string;
+    nombre: string;
+    apellido: string;
+    correo: string;
+  };
+  resumen: AcademicHistorySummaryApiItem;
+  alertas_repitencia: AcademicHistoryAlertApiItem[];
+  historial: AcademicHistoryItem[];
+}

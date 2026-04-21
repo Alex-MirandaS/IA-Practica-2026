@@ -29,6 +29,12 @@ let HistorialAcademicoController = class HistorialAcademicoController {
     findAll() {
         return this.service.findAll();
     }
+    findByCarnet(carnet) {
+        return this.service.findByCarnet(carnet);
+    }
+    findResumenByCarnet(carnet) {
+        return this.service.findResumenByCarnet(carnet);
+    }
     findOne(id) {
         return this.service.findOne(+id);
     }
@@ -55,6 +61,24 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], HistorialAcademicoController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('estudiante/carnet/:carnet'),
+    (0, swagger_1.ApiOperation)({ summary: 'Listar historial academico por carnet de estudiante' }),
+    (0, swagger_1.ApiParam)({ name: 'carnet', type: String }),
+    __param(0, (0, common_1.Param)('carnet')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], HistorialAcademicoController.prototype, "findByCarnet", null);
+__decorate([
+    (0, common_1.Get)('resumen/carnet/:carnet'),
+    (0, swagger_1.ApiOperation)({ summary: 'Calcular resumen academico por carnet' }),
+    (0, swagger_1.ApiParam)({ name: 'carnet', type: String }),
+    __param(0, (0, common_1.Param)('carnet')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], HistorialAcademicoController.prototype, "findResumenByCarnet", null);
 __decorate([
     (0, common_1.Get)(':id'),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener registro por id' }),

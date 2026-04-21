@@ -1,12 +1,56 @@
 <section class="page-header">
   <div>
     <span class="eyebrow">Rendimiento académico</span>
-    <h2>Control de rendimiento y repitencias</h2>
-    <p>Visualiza alertas, promedio general y la evolución de cursos clave.</p>
+    <h2>Historial académico y rendimiento</h2>
+    <p>Ingresa el carnet del estudiante para cargar su historial completo.</p>
   </div>
 </section>
 
-<ng-container *ngIf="!isLoading && summary; else loading">
+<mat-card class="panel search-panel">
+  <mat-card-content>
+    <form [formGroup]="studentCarnetForm" (ngSubmit)="onSearchByCarnet()" class="search-form">
+      <mat-form-field appearance="outline" class="carnet-field">
+        <mat-label>Carnet del estudiante</mat-label>
+        <input matInput formControlName="carnet" placeholder="Ej: 202300001" />
+      </mat-form-field>
+      <div class="search-actions">
+        <button
+          mat-raised-button
+          color="primary"
+          type="submit"
+          class="search-button"
+          [disabled]="isLoading || !studentCarnetForm.valid"
+        >
+          <mat-icon>search</mat-icon>
+          Buscar historial
+        </button>
+      </div>
+    </form>
+    <mat-error *ngIf="searchAttempted && errorMessage" class="search-error">{{ errorMessage }}</mat-error>
+  </mat-card-content>
+</mat-card>
+
+<ng-container *ngIf="summary && !isLoading">
+  <mat-card class="panel student-card" *ngIf="studentInfo">
+    <mat-card-title>Información del estudiante</mat-card-title>
+    <mat-card-content>
+      <div class="student-grid">
+        <div>
+          <span>Carnet</span>
+          <strong>{{ studentInfo.carnet }}</strong>
+        </div>
+        <div>
+          <span>Nombre completo</span>
+          <strong>{{ studentInfo.nombre }} {{ studentInfo.apellido }}</strong>
+        </div>
+        <div>
+          <span>Correo</span>
+          <strong>{{ studentInfo.correo }}</strong>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
   <section class="metrics-grid">
     <mat-card class="metric-card">
       <span>Promedio general</span>
@@ -16,18 +60,14 @@
       <span>Créditos aprobados</span>
       <strong>{{ summary.creditosAprobados }}</strong>
     </mat-card>
-    <mat-card class="metric-card">
-      <span>Créditos en curso</span>
-      <strong>{{ summary.creditosEnCurso }}</strong>
-    </mat-card>
     <mat-card class="metric-card warning">
       <span>Riesgo de repitencia</span>
-      <strong>{{ summary.riesgoRepitencia }}</strong>
+      <strong>{{ summary.riesgoRepitencia }}%</strong>
     </mat-card>
   </section>
 
-  <mat-card class="panel">
-    <mat-card-title>Alertas</mat-card-title>
+  <mat-card class="panel" *ngIf="summary.alertas.length > 0">
+    <mat-card-title>Alertas de repitencia</mat-card-title>
     <mat-card-content>
       <mat-list>
         <mat-list-item *ngFor="let alert of summary.alertas">{{ alert }}</mat-list-item>
@@ -36,18 +76,18 @@
   </mat-card>
 
   <mat-card class="panel">
-    <mat-card-title>Detalle académico</mat-card-title>
+    <mat-card-title>Historial académico del estudiante</mat-card-title>
     <mat-card-content>
       <div class="table-wrap">
-        <table mat-table [dataSource]="summary.detalle" class="mat-elevation-z1">
+        <table mat-table [dataSource]="historyItems" class="mat-elevation-z1">
           <ng-container matColumnDef="curso">
             <th mat-header-cell *matHeaderCellDef>Curso</th>
-            <td mat-cell *matCellDef="let item">{{ item.curso }}</td>
+            <td mat-cell *matCellDef="let item">{{ item.curso?.nombre }}</td>
           </ng-container>
 
-          <ng-container matColumnDef="semestre">
-            <th mat-header-cell *matHeaderCellDef>Semestre</th>
-            <td mat-cell *matCellDef="let item">{{ item.semestre }}</td>
+          <ng-container matColumnDef="codigo">
+            <th mat-header-cell *matHeaderCellDef>Codigo</th>
+            <td mat-cell *matCellDef="let item">{{ item.curso?.codigo || '-' }}</td>
           </ng-container>
 
           <ng-container matColumnDef="nota">
@@ -55,14 +95,28 @@
             <td mat-cell *matCellDef="let item">{{ item.nota }}</td>
           </ng-container>
 
-          <ng-container matColumnDef="estado">
+          <ng-container matColumnDef="aprobado">
             <th mat-header-cell *matHeaderCellDef>Estado</th>
-            <td mat-cell *matCellDef="let item">{{ item.estado }}</td>
+            <td mat-cell *matCellDef="let item">
+              <span class="status-badge" [ngClass]="{ 'status-passed': item.aprobado, 'status-failed': !item.aprobado }">
+                {{ item.aprobado ? 'Aprobado' : 'Reprobado' }}
+              </span>
+            </td>
           </ng-container>
 
-          <ng-container matColumnDef="creditos">
-            <th mat-header-cell *matHeaderCellDef>Créditos</th>
-            <td mat-cell *matCellDef="let item">{{ item.creditos }}</td>
+          <ng-container matColumnDef="anio">
+            <th mat-header-cell *matHeaderCellDef>Anio</th>
+            <td mat-cell *matCellDef="let item">{{ item.anio }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="ciclo">
+            <th mat-header-cell *matHeaderCellDef>Ciclo</th>
+            <td mat-cell *matCellDef="let item">{{ item.ciclo?.ciclo }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="intentos">
+            <th mat-header-cell *matHeaderCellDef>Intentos</th>
+            <td mat-cell *matCellDef="let item">{{ item.intentos }}</td>
           </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
@@ -73,9 +127,9 @@
   </mat-card>
 </ng-container>
 
-<ng-template #loading>
+<ng-container *ngIf="isLoading">
   <div class="loading">
     <mat-progress-spinner diameter="42" mode="indeterminate"></mat-progress-spinner>
-    <span>Cargando rendimiento académico...</span>
+    <span>Cargando historial academico...</span>
   </div>
-</ng-template>
+</ng-container>
