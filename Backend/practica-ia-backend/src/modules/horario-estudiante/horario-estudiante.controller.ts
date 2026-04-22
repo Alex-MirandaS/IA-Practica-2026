@@ -16,15 +16,15 @@ export class HorarioEstudianteController {
     return this.service.create(dto);
   }
 
-  @Get('preview/:idEstudiante')
+  @Get('preview/:carnet')
   @ApiOperation({
     summary: 'Previsualizar cursos para generar horario',
     description:
       'Marca por defecto cursos obligatorios abiertos y muestra elegibilidad por prerrequisitos/creditos acumulados.',
   })
-  @ApiParam({ name: 'idEstudiante', type: Number })
-  previewCursos(@Param('idEstudiante', ParseIntPipe) idEstudiante: number) {
-    return this.service.previewCursosParaSeleccion(idEstudiante);
+  @ApiParam({ name: 'carnet', type: String })
+  previewCursos(@Param('carnet') carnet: string) {
+    return this.service.previewCursosParaSeleccionPorCarnet(carnet);
   }
 
   @Post('generar')

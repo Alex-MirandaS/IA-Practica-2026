@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { AcademicApiService } from '../../core/services/academic-api.service';
 import {
   AcademicHistoryAlertApiItem,
@@ -66,7 +68,10 @@ export class PerformanceComponent implements OnInit {
     const historial = Array.isArray(response.historial) ? response.historial : [];
     const resumen = response.resumen;
 
-    this.studentInfo = response.estudiante;
+    this.studentInfo = {
+      ...response.estudiante,
+      carrera: response.estudiante.carrera || 'No especificada',
+    };
     this.historyItems = historial;
     this.summary = {
       promedioGeneral: this.calculateAverage(historial),
@@ -88,6 +93,66 @@ export class PerformanceComponent implements OnInit {
     return (Array.isArray(alertas) ? alertas : [])
       .filter((alert) => alert.alerta)
       .map((alert) => `${alert.nombre} (${alert.codigo}) tiene ${alert.reprobados} reprobaciones.`);
+  }
+
+  downloadHistoryCsv(): void {
+    if (!this.historyItems.length) {
+      return;
+    }
+
+    const headers = ['Curso', 'Codigo', 'Nota', 'Estado', 'Anio', 'Ciclo', 'Intentos'];
+    const rows = this.historyItems.map((item) => [
+      item.curso?.nombre || '',
+      item.curso?.codigo || '-',
+      item.nota || '',
+      item.aprobado ? 'Aprobado' : 'Reprobado',
+      String(item.anio ?? ''),
+      item.ciclo?.ciclo || '',
+      String(item.intentos ?? ''),
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `historial_${this.studentInfo?.carnet || 'estudiante'}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  downloadHistoryPdf(): void {
+    if (!this.historyItems.length) {
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const studentName = `${this.studentInfo?.nombre || ''} ${this.studentInfo?.apellido || ''}`.trim();
+    doc.setFontSize(14);
+    doc.text('Historial academico del estudiante', 14, 14);
+    doc.setFontSize(10);
+    doc.text(`Carnet: ${this.studentInfo?.carnet || '-'}`, 14, 20);
+    doc.text(`Nombre: ${studentName || '-'}`, 14, 25);
+
+    autoTable(doc, {
+      startY: 30,
+      head: [['Curso', 'Codigo', 'Nota', 'Estado', 'Anio', 'Ciclo', 'Intentos']],
+      body: this.historyItems.map((item) => [
+        item.curso?.nombre || '',
+        item.curso?.codigo || '-',
+        item.nota || '',
+        item.aprobado ? 'Aprobado' : 'Reprobado',
+        String(item.anio ?? ''),
+        item.ciclo?.ciclo || '',
+        String(item.intentos ?? ''),
+      ]),
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [25, 118, 210] },
+    });
+
+    doc.save(`historial_${this.studentInfo?.carnet || 'estudiante'}.pdf`);
   }
 
   private calculateAverage(items: AcademicHistoryItem[]): number {

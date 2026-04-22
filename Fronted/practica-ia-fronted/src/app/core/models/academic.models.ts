@@ -71,12 +71,38 @@ export interface StudentProfile {
 }
 
 export interface ScheduleGenerationRequest {
+  carnet: string;
   id_estudiante: number;
   selected_course_ids: number[];
   max_credits?: number;
   population_size?: number;
   generations?: number;
   persist?: boolean;
+}
+
+export interface PreviewCourse {
+  id_curso: number;
+  codigo: string;
+  nombre: string;
+  creditos: number;
+  obligatorio: boolean;
+  prioridad_bottleneck?: number;
+  elegible: boolean;
+  motivo_no_elegible?: string;
+  abierto_en_horario_general: boolean;
+  seleccionado_por_defecto: boolean;
+  variantes: Array<{
+    id_horario_general: number;
+    seccion: string;
+    bloques: Array<{ day: string; start: number; end: number }>;
+    min_creditos_requeridos: number;
+  }>;
+}
+
+export interface PreviewScheduleResponse {
+  id_estudiante: number;
+  creditos_aprobados_acumulados: number;
+  cursos: PreviewCourse[];
 }
 
 export interface ScheduleBlock {
@@ -104,8 +130,21 @@ export interface GeneratedSchedule {
     obligatorio?: boolean;
     prioridad_bottleneck?: number;
     id_horario_general: number;
+    id_curso_horario?: number;
     seccion: string;
+    semestre?: string;
+    docente?: string;
+    salon?: string;
     bloques: ScheduleBlock[];
+    bloques_detallados?: Array<{
+      periodo: {
+        id: number;
+        hora_inicio: string;
+        hora_fin: string;
+      };
+      salon?: string;
+      tipo_jornada?: string;
+    }>;
   }>;
   conflictos?: Array<{
     curso_a: { id_curso: number; codigo: string; nombre: string; seccion: string };
@@ -124,6 +163,12 @@ export interface GeneratedSchedule {
       blocks: { day: string; start: number; end: number }[];
       minCreditosRequeridos: number;
     }>;
+  }>;
+  cursos_omitidos?: Array<{
+    id_curso: number;
+    codigo: string;
+    nombre: string;
+    razon: string;
   }>;
   sugerencia?: string;
 }
@@ -160,6 +205,7 @@ export interface AcademicHistoryItem {
     nombre: string;
     apellido: string;
     correo: string;
+    carrera?: string;
   };
   curso: {
     id: number;
@@ -204,6 +250,7 @@ export interface AcademicHistoryResponse {
     nombre: string;
     apellido: string;
     correo: string;
+    carrera?: string;
   };
   resumen: AcademicHistorySummaryApiItem;
   alertas_repitencia: AcademicHistoryAlertApiItem[];

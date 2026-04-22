@@ -10,6 +10,7 @@ import {
   PensumCourse,
   PensumCareerApiItem,
   PensumPrerequisiteApiItem,
+  PreviewScheduleResponse,
   RepetitionItem,
   ScheduleGenerationRequest,
 } from '../models/academic.models';
@@ -83,8 +84,8 @@ export class AcademicApiService {
     return this.http.post<GeneratedSchedule>(`${this.baseUrl}/horario-estudiante/generar`, request);
   }
 
-  previewSchedule(idEstudiante: number): Observable<{ cursos: Array<{ id_curso: number; codigo: string; nombre: string; creditos: number; obligatorio: boolean; seleccionado_por_defecto: boolean; variantes: Array<{ id_horario_general: number; seccion: string; bloques: Array<{ day: string; start: number; end: number }>; min_creditos_requeridos: number; }>; }>; creditos_aprobados_acumulados: number; id_estudiante: number; }> {
-    return this.http.get<{ cursos: Array<{ id_curso: number; codigo: string; nombre: string; creditos: number; obligatorio: boolean; seleccionado_por_defecto: boolean; variantes: Array<{ id_horario_general: number; seccion: string; bloques: Array<{ day: string; start: number; end: number }>; min_creditos_requeridos: number; }>; }>; creditos_aprobados_acumulados: number; id_estudiante: number; }>(`${this.baseUrl}/horario-estudiante/preview/${idEstudiante}`);
+  previewSchedule(carnet: string): Observable<PreviewScheduleResponse> {
+    return this.http.get<PreviewScheduleResponse>(`${this.baseUrl}/horario-estudiante/preview/${encodeURIComponent(carnet)}`);
   }
 
   getAcademicSummary(): Observable<AcademicPerformanceSummary> {

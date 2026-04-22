@@ -1,11 +1,9 @@
 import { Type } from 'class-transformer';
-import { ArrayUnique, IsArray, IsBoolean, IsInt, IsOptional, Min } from 'class-validator';
+import { ArrayUnique, IsArray, IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class GenerateHorarioPersonalizadoDto {
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  id_estudiante!: number;
+  @IsString()
+  carnet!: string;
 
   @IsOptional()
   @IsArray()

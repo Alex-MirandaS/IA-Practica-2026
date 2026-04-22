@@ -17,8 +17,6 @@ const pensum_entity_1 = require("../pensum/entities/pensum.entity");
 const seleccion_cursos_entity_1 = require("../seleccion-cursos/entities/seleccion-cursos.entity");
 const historial_academico_entity_1 = require("../historial-academico/entities/historial-academico.entity");
 const curso_prerrequisito_entity_1 = require("../curso-prerrequisito/entities/curso-prerrequisito.entity");
-const horario_general_entity_1 = require("../horario-general/entities/horario-general.entity");
-const curso_entity_1 = require("../curso/entities/curso.entity");
 const detalle_horario_entity_1 = require("../detalle-horario/entities/detalle-horario.entity");
 let HorarioEstudianteModule = class HorarioEstudianteModule {
 };
@@ -33,8 +31,6 @@ exports.HorarioEstudianteModule = HorarioEstudianteModule = __decorate([
                 seleccion_cursos_entity_1.SeleccionCursos,
                 historial_academico_entity_1.HistorialAcademico,
                 curso_prerrequisito_entity_1.CursoPrerrequisito,
-                horario_general_entity_1.HorarioGeneral,
-                curso_entity_1.Curso,
                 detalle_horario_entity_1.DetalleHorario,
             ]),
         ],

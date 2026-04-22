@@ -6,7 +6,7 @@ export declare class HorarioEstudianteController {
     private readonly service;
     constructor(service: HorarioEstudianteService);
     create(dto: CreateHorarioEstudianteDto): Promise<import("./entities/horario-estudiante.entity").HorarioEstudiante>;
-    previewCursos(idEstudiante: number): Promise<{
+    previewCursos(carnet: string): Promise<{
         id_estudiante: number;
         creditos_aprobados_acumulados: number;
         cursos: {
@@ -22,7 +22,11 @@ export declare class HorarioEstudianteController {
             seleccionado_por_defecto: boolean;
             variantes: {
                 id_horario_general: number;
+                id_curso_horario: number;
                 seccion: string;
+                semestre: string | undefined;
+                docente: string | undefined;
+                salon: string | undefined;
                 bloques: {
                     day: string;
                     start: number;
@@ -33,6 +37,12 @@ export declare class HorarioEstudianteController {
         }[];
     }>;
     generarHorario(dto: GenerateHorarioPersonalizadoDto): Promise<{
+        cursos_omitidos?: {
+            id_curso: number;
+            codigo: string;
+            nombre: string;
+            razon: string;
+        }[] | undefined;
         status: string;
         id_estudiante: number;
         creditos_seleccionados: number;
@@ -74,23 +84,43 @@ export declare class HorarioEstudianteController {
                     start: number;
                     end: number;
                 }[];
+                detailedBlocks: {
+                    day: string;
+                    start: number;
+                    end: number;
+                    periodo: {
+                        id: number;
+                        hora_inicio: string;
+                        hora_fin: string;
+                    };
+                    salon: string;
+                    tipo_jornada: string;
+                }[];
                 minCreditosRequeridos: number;
+                docente?: string;
+                semestre?: string;
+                salon?: string;
             }[];
         }[];
-        sugerencia?: undefined;
-        id_horario_estudiante?: undefined;
-        cursos?: undefined;
     } | {
+        cursos_omitidos?: {
+            id_curso: number;
+            codigo: string;
+            nombre: string;
+            razon: string;
+        }[] | undefined;
         status: string;
         id_estudiante: number;
         creditos_seleccionados: number;
         max_creditos: number;
         sugerencia: string;
-        conflictos?: undefined;
-        alternativas?: undefined;
-        id_horario_estudiante?: undefined;
-        cursos?: undefined;
     } | {
+        cursos_omitidos?: {
+            id_curso: number;
+            codigo: string;
+            nombre: string;
+            razon: string;
+        }[] | undefined;
         status: string;
         id_estudiante: number;
         id_horario_estudiante: number | undefined;
@@ -103,16 +133,26 @@ export declare class HorarioEstudianteController {
             obligatorio: boolean;
             prioridad_bottleneck: number;
             id_horario_general: number;
+            id_curso_horario: number;
             seccion: string;
+            semestre: string | undefined;
+            docente: string | undefined;
+            salon: string | undefined;
             bloques: {
                 day: string;
                 start: number;
                 end: number;
             }[];
+            bloques_detallados: {
+                periodo: {
+                    id: number;
+                    hora_inicio: string;
+                    hora_fin: string;
+                };
+                salon: string;
+                tipo_jornada: string;
+            }[];
         }[];
-        conflictos?: undefined;
-        alternativas?: undefined;
-        sugerencia?: undefined;
     }>;
     findAll(): Promise<import("./entities/horario-estudiante.entity").HorarioEstudiante[]>;
     findOne(id: string): Promise<import("./entities/horario-estudiante.entity").HorarioEstudiante | null>;

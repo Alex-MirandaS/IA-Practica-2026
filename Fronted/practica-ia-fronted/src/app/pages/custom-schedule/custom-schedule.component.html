@@ -2,7 +2,7 @@
   <div>
     <span class="eyebrow">Horario personalizado</span>
     <h2>Generación de horario</h2>
-    <p>Consulta la previsualización y luego genera el horario con el algoritmo del backend.</p>
+    <p>Consulta la previsualizacion por carnet y luego genera el horario con el algoritmo del backend.</p>
   </div>
 </section>
 
@@ -10,8 +10,8 @@
   <form [formGroup]="form" class="form" (ngSubmit)="generate()">
     <div class="grid-2">
       <mat-form-field appearance="outline">
-        <mat-label>ID del estudiante</mat-label>
-        <input matInput formControlName="id_estudiante" type="number" />
+        <mat-label>Carnet del estudiante</mat-label>
+        <input matInput formControlName="carnet" type="text" placeholder="Ej: 202300014" />
       </mat-form-field>
 
       <mat-form-field appearance="outline">
@@ -52,7 +52,7 @@
     <mat-form-field appearance="outline">
       <mat-label>Cursos seleccionados</mat-label>
       <mat-select formControlName="selected_course_ids" multiple>
-        <mat-option *ngFor="let course of availableCourses" [value]="course.id_curso">
+        <mat-option *ngFor="let course of selectableCourses" [value]="course.id_curso">
           {{ course.codigo }} - {{ course.nombre }}
         </mat-option>
       </mat-select>
@@ -68,10 +68,12 @@
   <mat-card-title>Cursos disponibles</mat-card-title>
   <mat-card-content>
     <div class="schedule-grid courses-grid">
-      <mat-card class="schedule-item" *ngFor="let course of availableCourses">
+      <mat-card class="schedule-item" [class.schedule-item--disabled]="!course.elegible" *ngFor="let course of availableCourses">
         <strong>{{ course.codigo }}</strong>
         <span>{{ course.nombre }}</span>
-        <small>{{ course.creditos }} créditos · {{ course.obligatorio ? 'Obligatorio' : 'Electivo' }}</small>
+        <small>{{ course.creditos }} creditos · {{ course.obligatorio ? 'Obligatorio' : 'Electivo' }}</small>
+        <small *ngIf="course.elegible" class="state-label state-label--ok">Elegible</small>
+        <small *ngIf="!course.elegible" class="state-label state-label--warn">{{ course.motivo_no_elegible || 'No elegible' }}</small>
       </mat-card>
     </div>
   </mat-card-content>
@@ -87,10 +89,12 @@
     <p *ngIf="result.sugerencia">{{ result.sugerencia }}</p>
 
     <div class="schedule-grid" *ngIf="result.cursos?.length">
-      <mat-card class="schedule-item" *ngFor="let block of result.cursos">
-        <strong>{{ block.codigo }}</strong>
-        <span>{{ block.nombre }}</span>
-        <small>{{ block.seccion }} · {{ block.id_horario_general }}</small>
+      <mat-card class="schedule-item" *ngFor="let course of result.cursos">
+        <strong>{{ course.codigo }}</strong>
+        <span>{{ course.nombre }}</span>
+        <small>Docente: {{ getCourseTeacher(course) }}</small>
+        <small>Salon: {{ getCourseRoom(course) }}</small>
+        <small>Horario: {{ getCourseTimeRanges(course) }}</small>
       </mat-card>
     </div>
   </mat-card-content>
@@ -101,7 +105,8 @@
   <mat-card-content>
     <mat-list>
       <mat-list-item *ngFor="let conflict of result.conflictos">
-        {{ conflict.curso_a.codigo }} vs {{ conflict.curso_b.codigo }}
+        {{ conflict.curso_a.codigo }} (Sec {{ conflict.curso_a.seccion }}) {{ formatDay(conflict.bloque_a.day) }} {{ formatMinutes(conflict.bloque_a.start) }}-{{ formatMinutes(conflict.bloque_a.end) }} vs
+        {{ conflict.curso_b.codigo }} (Sec {{ conflict.curso_b.seccion }}) {{ formatDay(conflict.bloque_b.day) }} {{ formatMinutes(conflict.bloque_b.start) }}-{{ formatMinutes(conflict.bloque_b.end) }}
       </mat-list-item>
     </mat-list>
   </mat-card-content>

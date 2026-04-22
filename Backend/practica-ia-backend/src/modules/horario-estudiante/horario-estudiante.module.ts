@@ -8,8 +8,6 @@ import { Pensum } from '../pensum/entities/pensum.entity';
 import { SeleccionCursos } from '../seleccion-cursos/entities/seleccion-cursos.entity';
 import { HistorialAcademico } from '../historial-academico/entities/historial-academico.entity';
 import { CursoPrerrequisito } from '../curso-prerrequisito/entities/curso-prerrequisito.entity';
-import { HorarioGeneral } from '../horario-general/entities/horario-general.entity';
-import { Curso } from '../curso/entities/curso.entity';
 import { DetalleHorario } from '../detalle-horario/entities/detalle-horario.entity';
 
 @Module({
@@ -21,8 +19,6 @@ import { DetalleHorario } from '../detalle-horario/entities/detalle-horario.enti
       SeleccionCursos,
       HistorialAcademico,
       CursoPrerrequisito,
-      HorarioGeneral,
-      Curso,
       DetalleHorario,
     ]),
   ],

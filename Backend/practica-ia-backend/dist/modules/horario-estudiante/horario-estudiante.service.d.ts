@@ -7,8 +7,6 @@ import { Pensum } from '../pensum/entities/pensum.entity';
 import { SeleccionCursos } from '../seleccion-cursos/entities/seleccion-cursos.entity';
 import { HistorialAcademico } from '../historial-academico/entities/historial-academico.entity';
 import { CursoPrerrequisito } from '../curso-prerrequisito/entities/curso-prerrequisito.entity';
-import { HorarioGeneral } from '../horario-general/entities/horario-general.entity';
-import { Curso } from '../curso/entities/curso.entity';
 import { DetalleHorario } from '../detalle-horario/entities/detalle-horario.entity';
 import { GenerateHorarioPersonalizadoDto } from './dto/generate-horario-personalizado.dto';
 type TimeBlock = {
@@ -16,12 +14,28 @@ type TimeBlock = {
     start: number;
     end: number;
 };
+type DetailedTimeBlock = {
+    day: string;
+    start: number;
+    end: number;
+    periodo: {
+        id: number;
+        hora_inicio: string;
+        hora_fin: string;
+    };
+    salon: string;
+    tipo_jornada: string;
+};
 type HorarioVariant = {
     horarioGeneralId: number;
     idCursoHorario: number;
     seccion: string;
     blocks: TimeBlock[];
+    detailedBlocks: DetailedTimeBlock[];
     minCreditosRequeridos: number;
+    docente?: string;
+    semestre?: string;
+    salon?: string;
 };
 export declare class HorarioEstudianteService {
     private readonly repository;
@@ -30,10 +44,8 @@ export declare class HorarioEstudianteService {
     private readonly seleccionRepository;
     private readonly historialRepository;
     private readonly prerrequisitoRepository;
-    private readonly horarioGeneralRepository;
-    private readonly cursoRepository;
     private readonly detalleHorarioRepository;
-    constructor(repository: Repository<HorarioEstudiante>, estudianteRepository: Repository<Estudiante>, pensumRepository: Repository<Pensum>, seleccionRepository: Repository<SeleccionCursos>, historialRepository: Repository<HistorialAcademico>, prerrequisitoRepository: Repository<CursoPrerrequisito>, horarioGeneralRepository: Repository<HorarioGeneral>, cursoRepository: Repository<Curso>, detalleHorarioRepository: Repository<DetalleHorario>);
+    constructor(repository: Repository<HorarioEstudiante>, estudianteRepository: Repository<Estudiante>, pensumRepository: Repository<Pensum>, seleccionRepository: Repository<SeleccionCursos>, historialRepository: Repository<HistorialAcademico>, prerrequisitoRepository: Repository<CursoPrerrequisito>, detalleHorarioRepository: Repository<DetalleHorario>);
     create(dto: CreateHorarioEstudianteDto): Promise<HorarioEstudiante>;
     findAll(): Promise<HorarioEstudiante[]>;
     findOne(id: number): Promise<HorarioEstudiante | null>;
@@ -55,13 +67,49 @@ export declare class HorarioEstudianteService {
             seleccionado_por_defecto: boolean;
             variantes: {
                 id_horario_general: number;
+                id_curso_horario: number;
                 seccion: string;
+                semestre: string | undefined;
+                docente: string | undefined;
+                salon: string | undefined;
+                bloques: TimeBlock[];
+                min_creditos_requeridos: number;
+            }[];
+        }[];
+    }>;
+    previewCursosParaSeleccionPorCarnet(carnet: string): Promise<{
+        id_estudiante: number;
+        creditos_aprobados_acumulados: number;
+        cursos: {
+            id_curso: number;
+            codigo: string;
+            nombre: string;
+            creditos: number;
+            obligatorio: boolean;
+            prioridad_bottleneck: number;
+            elegible: boolean;
+            motivo_no_elegible: string | undefined;
+            abierto_en_horario_general: boolean;
+            seleccionado_por_defecto: boolean;
+            variantes: {
+                id_horario_general: number;
+                id_curso_horario: number;
+                seccion: string;
+                semestre: string | undefined;
+                docente: string | undefined;
+                salon: string | undefined;
                 bloques: TimeBlock[];
                 min_creditos_requeridos: number;
             }[];
         }[];
     }>;
     generarHorarioPersonalizado(dto: GenerateHorarioPersonalizadoDto): Promise<{
+        cursos_omitidos?: {
+            id_curso: number;
+            codigo: string;
+            nombre: string;
+            razon: string;
+        }[] | undefined;
         status: string;
         id_estudiante: number;
         creditos_seleccionados: number;
@@ -88,20 +136,25 @@ export declare class HorarioEstudianteService {
             nombre: string;
             variantes_sin_traslape: HorarioVariant[];
         }[];
-        sugerencia?: undefined;
-        id_horario_estudiante?: undefined;
-        cursos?: undefined;
     } | {
+        cursos_omitidos?: {
+            id_curso: number;
+            codigo: string;
+            nombre: string;
+            razon: string;
+        }[] | undefined;
         status: string;
         id_estudiante: number;
         creditos_seleccionados: number;
         max_creditos: number;
         sugerencia: string;
-        conflictos?: undefined;
-        alternativas?: undefined;
-        id_horario_estudiante?: undefined;
-        cursos?: undefined;
     } | {
+        cursos_omitidos?: {
+            id_curso: number;
+            codigo: string;
+            nombre: string;
+            razon: string;
+        }[] | undefined;
         status: string;
         id_estudiante: number;
         id_horario_estudiante: number | undefined;
@@ -114,12 +167,22 @@ export declare class HorarioEstudianteService {
             obligatorio: boolean;
             prioridad_bottleneck: number;
             id_horario_general: number;
+            id_curso_horario: number;
             seccion: string;
+            semestre: string | undefined;
+            docente: string | undefined;
+            salon: string | undefined;
             bloques: TimeBlock[];
+            bloques_detallados: {
+                periodo: {
+                    id: number;
+                    hora_inicio: string;
+                    hora_fin: string;
+                };
+                salon: string;
+                tipo_jornada: string;
+            }[];
         }[];
-        conflictos?: undefined;
-        alternativas?: undefined;
-        sugerencia?: undefined;
     }>;
     private runGeneticSelection;
     private mutateGene;
@@ -131,13 +194,21 @@ export declare class HorarioEstudianteService {
     private consecutiveBonus;
     private blocksOverlap;
     private buildPlanningContext;
-    private extractBlocksFromExternalRow;
+    private extractBlocksFromSchedulerVariant;
+    private buildVariantsFromLatestSchedule;
+    private extractFirstSalon;
     private normalizeDay;
     private parseTimeToMinutes;
-    private fetchCollectionWithFallback;
-    private normalizeCollection;
+    private fetchLatestGeneratedSchedule;
     private readArray;
+    private readObject;
     private readString;
     private readNumber;
+    private readBoolean;
+    private normalizeCode;
+    private normalizeCollection;
+    private buildPeriodoToDayMapping;
+    private fetchAndMapPeriodosWithDias;
+    private fetchAndMapDetalleDias;
 }
 export {};

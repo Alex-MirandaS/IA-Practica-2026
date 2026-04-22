@@ -13,7 +13,7 @@ exports.GenerateHorarioPersonalizadoDto = void 0;
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 class GenerateHorarioPersonalizadoDto {
-    id_estudiante;
+    carnet;
     selected_course_ids;
     max_credits;
     population_size;
@@ -22,11 +22,9 @@ class GenerateHorarioPersonalizadoDto {
 }
 exports.GenerateHorarioPersonalizadoDto = GenerateHorarioPersonalizadoDto;
 __decorate([
-    (0, class_transformer_1.Type)(() => Number),
-    (0, class_validator_1.IsInt)(),
-    (0, class_validator_1.Min)(1),
-    __metadata("design:type", Number)
-], GenerateHorarioPersonalizadoDto.prototype, "id_estudiante", void 0);
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], GenerateHorarioPersonalizadoDto.prototype, "carnet", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),

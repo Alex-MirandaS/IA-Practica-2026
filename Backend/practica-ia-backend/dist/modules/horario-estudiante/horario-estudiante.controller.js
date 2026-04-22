@@ -27,8 +27,8 @@ let HorarioEstudianteController = class HorarioEstudianteController {
     create(dto) {
         return this.service.create(dto);
     }
-    previewCursos(idEstudiante) {
-        return this.service.previewCursosParaSeleccion(idEstudiante);
+    previewCursos(carnet) {
+        return this.service.previewCursosParaSeleccionPorCarnet(carnet);
     }
     generarHorario(dto) {
         return this.service.generarHorarioPersonalizado(dto);
@@ -56,15 +56,15 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], HorarioEstudianteController.prototype, "create", null);
 __decorate([
-    (0, common_1.Get)('preview/:idEstudiante'),
+    (0, common_1.Get)('preview/:carnet'),
     (0, swagger_1.ApiOperation)({
         summary: 'Previsualizar cursos para generar horario',
         description: 'Marca por defecto cursos obligatorios abiertos y muestra elegibilidad por prerrequisitos/creditos acumulados.',
     }),
-    (0, swagger_1.ApiParam)({ name: 'idEstudiante', type: Number }),
-    __param(0, (0, common_1.Param)('idEstudiante', common_1.ParseIntPipe)),
+    (0, swagger_1.ApiParam)({ name: 'carnet', type: String }),
+    __param(0, (0, common_1.Param)('carnet')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], HorarioEstudianteController.prototype, "previewCursos", null);
 __decorate([

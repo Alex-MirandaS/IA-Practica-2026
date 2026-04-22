@@ -1,5 +1,5 @@
 export declare class GenerateHorarioPersonalizadoDto {
-    id_estudiante: number;
+    carnet: string;
     selected_course_ids?: number[];
     max_credits?: number;
     population_size?: number;

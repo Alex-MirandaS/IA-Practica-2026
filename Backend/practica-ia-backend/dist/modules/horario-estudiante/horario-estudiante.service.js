@@ -26,8 +26,6 @@ const pensum_entity_1 = require("../pensum/entities/pensum.entity");
 const seleccion_cursos_entity_1 = require("../seleccion-cursos/entities/seleccion-cursos.entity");
 const historial_academico_entity_1 = require("../historial-academico/entities/historial-academico.entity");
 const curso_prerrequisito_entity_1 = require("../curso-prerrequisito/entities/curso-prerrequisito.entity");
-const horario_general_entity_1 = require("../horario-general/entities/horario-general.entity");
-const curso_entity_1 = require("../curso/entities/curso.entity");
 const detalle_horario_entity_1 = require("../detalle-horario/entities/detalle-horario.entity");
 let HorarioEstudianteService = class HorarioEstudianteService {
     repository;
@@ -36,18 +34,14 @@ let HorarioEstudianteService = class HorarioEstudianteService {
     seleccionRepository;
     historialRepository;
     prerrequisitoRepository;
-    horarioGeneralRepository;
-    cursoRepository;
     detalleHorarioRepository;
-    constructor(repository, estudianteRepository, pensumRepository, seleccionRepository, historialRepository, prerrequisitoRepository, horarioGeneralRepository, cursoRepository, detalleHorarioRepository) {
+    constructor(repository, estudianteRepository, pensumRepository, seleccionRepository, historialRepository, prerrequisitoRepository, detalleHorarioRepository) {
         this.repository = repository;
         this.estudianteRepository = estudianteRepository;
         this.pensumRepository = pensumRepository;
         this.seleccionRepository = seleccionRepository;
         this.historialRepository = historialRepository;
         this.prerrequisitoRepository = prerrequisitoRepository;
-        this.horarioGeneralRepository = horarioGeneralRepository;
-        this.cursoRepository = cursoRepository;
         this.detalleHorarioRepository = detalleHorarioRepository;
     }
     create(dto) {
@@ -103,7 +97,11 @@ let HorarioEstudianteService = class HorarioEstudianteService {
                     seleccionado_por_defecto: seleccionadoPorDefecto,
                     variantes: curso.variantes.map((variant) => ({
                         id_horario_general: variant.horarioGeneralId,
+                        id_curso_horario: variant.idCursoHorario,
                         seccion: variant.seccion,
+                        semestre: variant.semestre,
+                        docente: variant.docente,
+                        salon: variant.salon,
                         bloques: variant.blocks,
                         min_creditos_requeridos: variant.minCreditosRequeridos,
                     })),
@@ -111,8 +109,34 @@ let HorarioEstudianteService = class HorarioEstudianteService {
             }),
         };
     }
+    async previewCursosParaSeleccionPorCarnet(carnet) {
+        const normalizedCarnet = carnet.trim();
+        if (!normalizedCarnet) {
+            throw new common_1.BadRequestException('Debe enviar un carnet valido');
+        }
+        const estudiante = await this.estudianteRepository.findOne({
+            where: { carnet: normalizedCarnet },
+            select: ['id'],
+        });
+        if (!estudiante) {
+            throw new common_1.BadRequestException(`No existe un estudiante con carnet ${normalizedCarnet}`);
+        }
+        return this.previewCursosParaSeleccion(estudiante.id);
+    }
     async generarHorarioPersonalizado(dto) {
-        const contexto = await this.buildPlanningContext(dto.id_estudiante);
+        const normalizedCarnet = dto.carnet.trim();
+        if (!normalizedCarnet) {
+            throw new common_1.BadRequestException('Debe enviar un carnet valido');
+        }
+        const estudiante = await this.estudianteRepository.findOne({
+            where: { carnet: normalizedCarnet },
+            select: ['id'],
+        });
+        if (!estudiante) {
+            throw new common_1.BadRequestException(`No existe un estudiante con carnet ${normalizedCarnet}`);
+        }
+        const idEstudiante = estudiante.id;
+        const contexto = await this.buildPlanningContext(idEstudiante);
         const seleccionMap = new Map();
         contexto.selecciones.forEach((row) => {
             if (row.curso?.id) {
@@ -133,69 +157,90 @@ let HorarioEstudianteService = class HorarioEstudianteService {
         if (cursosDeseados.length === 0) {
             throw new common_1.BadRequestException('No hay cursos seleccionados para generar horario');
         }
-        const noElegibles = cursosDeseados.filter((curso) => !curso.elegible);
-        if (noElegibles.length > 0) {
-            throw new common_1.BadRequestException({
-                message: 'Existen cursos seleccionados que no cumplen prerrequisitos o creditos acumulados',
-                cursos: noElegibles.map((curso) => ({
-                    id_curso: curso.idCurso,
-                    codigo: curso.codigo,
-                    nombre: curso.nombre,
-                    motivo: curso.motivoNoElegible ?? 'No elegible',
+        const cursosElegibles = cursosDeseados.filter((curso) => curso.elegible);
+        const cursosNoElegibles = cursosDeseados.filter((curso) => !curso.elegible);
+        const cursosCerrados = cursosElegibles.filter((curso) => curso.variantes.length === 0);
+        const cursosAbiertos = cursosElegibles.filter((curso) => curso.variantes.length > 0);
+        if (cursosAbiertos.length === 0) {
+            const reporteOmitidos = [
+                ...cursosNoElegibles.map((c) => ({
+                    id_curso: c.idCurso,
+                    codigo: c.codigo,
+                    nombre: c.nombre,
+                    razon: c.motivoNoElegible ?? 'No elegible',
                 })),
+                ...cursosCerrados.map((c) => ({
+                    id_curso: c.idCurso,
+                    codigo: c.codigo,
+                    nombre: c.nombre,
+                    razon: 'No hay variantes abiertas',
+                })),
+            ];
+            throw new common_1.BadRequestException({
+                message: 'No hay cursos disponibles para generar horario',
+                razon: 'Los cursos seleccionados no cumplen prerrequisitos, créditos, o no tienen variantes abiertas',
+                cursos_omitidos: reporteOmitidos,
             });
         }
-        const cerrados = cursosDeseados.filter((curso) => curso.variantes.length === 0);
-        if (cerrados.length > 0) {
-            throw new common_1.BadRequestException({
-                message: 'Existen cursos seleccionados que no estan abiertos en horario general',
-                cursos: cerrados.map((curso) => ({
-                    id_curso: curso.idCurso,
-                    codigo: curso.codigo,
-                    nombre: curso.nombre,
-                })),
-            });
-        }
+        const cursosOmitidos = [
+            ...cursosNoElegibles.map((c) => ({
+                id_curso: c.idCurso,
+                codigo: c.codigo,
+                nombre: c.nombre,
+                razon: c.motivoNoElegible ?? 'No elegible',
+            })),
+            ...cursosCerrados.map((c) => ({
+                id_curso: c.idCurso,
+                codigo: c.codigo,
+                nombre: c.nombre,
+                razon: 'No hay variantes abiertas',
+            })),
+        ];
         const maxCreditos = dto.max_credits ?? 24;
         const populationSize = dto.population_size ?? 80;
         const generations = dto.generations ?? 120;
         const persist = dto.persist !== false;
-        const bestGene = this.runGeneticSelection(cursosDeseados, populationSize, generations, maxCreditos);
-        const seleccion = this.decodeGene(bestGene, cursosDeseados);
+        const bestGene = this.runGeneticSelection(cursosAbiertos, populationSize, generations, maxCreditos);
+        const seleccion = this.decodeGene(bestGene, cursosAbiertos);
         const conflictos = this.detectConflicts(seleccion);
         const creditosSeleccionados = seleccion.reduce((acc, item) => acc + item.curso.creditos, 0);
         if (conflictos.length > 0) {
             return {
                 status: 'requiere_seleccion_manual',
-                id_estudiante: dto.id_estudiante,
+                id_estudiante: idEstudiante,
                 creditos_seleccionados: creditosSeleccionados,
                 max_creditos: maxCreditos,
                 conflictos,
-                alternativas: this.buildAlternatives(conflictos, cursosDeseados, bestGene),
+                alternativas: this.buildAlternatives(conflictos, cursosAbiertos, bestGene),
+                ...(cursosOmitidos.length > 0 && {
+                    cursos_omitidos: cursosOmitidos,
+                }),
             };
         }
         if (creditosSeleccionados > maxCreditos) {
             return {
                 status: 'requiere_ajuste_creditos',
-                id_estudiante: dto.id_estudiante,
+                id_estudiante: idEstudiante,
                 creditos_seleccionados: creditosSeleccionados,
                 max_creditos: maxCreditos,
                 sugerencia: 'Reduce cursos optativos o aumenta max_credits para continuar',
+                ...(cursosOmitidos.length > 0 && {
+                    cursos_omitidos: cursosOmitidos,
+                }),
             };
         }
         let horarioGeneradoId;
         if (persist) {
-            const header = await this.repository.save(this.repository.create({ estudiante: { id: dto.id_estudiante } }));
-            const detalles = seleccion.map((item) => this.detalleHorarioRepository.create({
+            const header = await this.repository.save(this.repository.create({ estudiante: { id: idEstudiante } }));
+            const detalles = seleccion.map(() => this.detalleHorarioRepository.create({
                 horario: { id: header.id },
-                horarioGeneral: { id: item.variante.horarioGeneralId },
             }));
             await this.detalleHorarioRepository.save(detalles);
             horarioGeneradoId = header.id;
         }
         return {
             status: 'generado',
-            id_estudiante: dto.id_estudiante,
+            id_estudiante: idEstudiante,
             id_horario_estudiante: horarioGeneradoId,
             creditos_seleccionados: creditosSeleccionados,
             max_creditos: maxCreditos,
@@ -206,9 +251,25 @@ let HorarioEstudianteService = class HorarioEstudianteService {
                 obligatorio: item.curso.obligatorio,
                 prioridad_bottleneck: item.curso.prioridadBottleneck,
                 id_horario_general: item.variante.horarioGeneralId,
+                id_curso_horario: item.variante.idCursoHorario,
                 seccion: item.variante.seccion,
+                semestre: item.variante.semestre,
+                docente: item.variante.docente,
+                salon: item.variante.salon,
                 bloques: item.variante.blocks,
+                bloques_detallados: item.variante.detailedBlocks.map((block) => ({
+                    periodo: {
+                        id: block.periodo.id,
+                        hora_inicio: block.periodo.hora_inicio,
+                        hora_fin: block.periodo.hora_fin,
+                    },
+                    salon: block.salon,
+                    tipo_jornada: block.tipo_jornada,
+                })),
             })),
+            ...(cursosOmitidos.length > 0 && {
+                cursos_omitidos: cursosOmitidos,
+            }),
         };
     }
     runGeneticSelection(cursos, populationSize, generations, maxCreditos) {
@@ -374,7 +435,15 @@ let HorarioEstudianteService = class HorarioEstudianteService {
         return score;
     }
     blocksOverlap(a, b) {
-        return a.day === b.day && a.start < b.end && b.start < a.end;
+        const bothUnknownDay = a.day === '*' && b.day === '*';
+        if (bothUnknownDay) {
+            return false;
+        }
+        if (a.day === '*' || b.day === '*') {
+            return false;
+        }
+        const sameDay = a.day === b.day;
+        return sameDay && a.start < b.end && b.start < a.end;
     }
     async buildPlanningContext(idEstudiante) {
         const estudiante = await this.estudianteRepository.findOne({ where: { id: idEstudiante }, relations: ['carrera'] });
@@ -427,43 +496,7 @@ let HorarioEstudianteService = class HorarioEstudianteService {
                 bottleneckByCurso.set(prereqCourseId, (bottleneckByCurso.get(prereqCourseId) ?? 0) + 1);
             }
         }
-        const horarioGeneralActivo = await this.horarioGeneralRepository.find({ where: { activo: true }, relations: ['seccion'] });
-        const externalHorarioRows = await this.fetchCollectionWithFallback(process.env.SCHEDULER_API_BASE_URL ?? 'http://localhost:3000', ['curso-horario', 'curso_horario', 'cursohorario']);
-        const externalByCursoHorario = new Map();
-        externalHorarioRows.forEach((row) => {
-            const id = this.readNumber(row, ['id']);
-            if (id) {
-                externalByCursoHorario.set(id, row);
-            }
-        });
-        const idExternoSet = Array.from(new Set(horarioGeneralActivo.map((row) => row.id_curso_horario)));
-        const cursosByExterno = await this.cursoRepository.find({ where: { id_externo: (0, typeorm_2.In)(idExternoSet) } });
-        const cursoInternoByExterno = new Map(cursosByExterno.filter((row) => row.id_externo).map((row) => [row.id_externo, row]));
-        const variantesByCurso = new Map();
-        for (const row of horarioGeneralActivo) {
-            const cursoInterno = cursoInternoByExterno.get(row.id_curso_horario);
-            if (!cursoInterno?.id) {
-                continue;
-            }
-            const extRow = externalByCursoHorario.get(row.id_curso_horario);
-            const parsedBlocks = this.extractBlocksFromExternalRow(extRow);
-            const minCreditos = this.readNumber(extRow, [
-                'creditos_requeridos',
-                'min_creditos',
-                'creditos_minimos',
-                'creditosRequeridos',
-            ]);
-            const variant = {
-                horarioGeneralId: row.id,
-                idCursoHorario: row.id_curso_horario,
-                seccion: row.seccion?.seccion ?? (this.readString(extRow, ['seccion', 'nombre_seccion']) || 'N/A'),
-                blocks: parsedBlocks,
-                minCreditosRequeridos: minCreditos,
-            };
-            const bucket = variantesByCurso.get(cursoInterno.id) ?? [];
-            bucket.push(variant);
-            variantesByCurso.set(cursoInterno.id, bucket);
-        }
+        const variantesByCurso = await this.buildVariantsFromLatestSchedule(pensumValidos);
         const cursos = pensumValidos
             .filter((row) => row.curso?.id && !aprobados.has(row.curso.id))
             .map((row) => {
@@ -504,51 +537,145 @@ let HorarioEstudianteService = class HorarioEstudianteService {
             creditosAprobados,
         };
     }
-    extractBlocksFromExternalRow(row) {
-        if (!row) {
-            return [];
-        }
+    extractBlocksFromSchedulerVariant(variantRow, jornadaRows, cursoRow, periodoMap) {
         const blocks = [];
-        const pushBlock = (dayRaw, startRaw, endRaw) => {
+        const detailedBlocks = [];
+        const pushBlock = (dayRaw, startRaw, endRaw, meta) => {
             const day = this.normalizeDay(dayRaw);
             const start = this.parseTimeToMinutes(startRaw);
             const end = this.parseTimeToMinutes(endRaw);
-            if (!day || start === null || end === null || start >= end) {
+            if (start === null || end === null || start >= end) {
                 return;
             }
             blocks.push({ day, start, end });
+            const periodoId = meta?.periodoId ?? 0;
+            if (periodoId > 0 && startRaw && endRaw) {
+                detailedBlocks.push({
+                    day,
+                    start,
+                    end,
+                    periodo: {
+                        id: periodoId,
+                        hora_inicio: startRaw,
+                        hora_fin: endRaw,
+                    },
+                    salon: meta?.salon ?? '',
+                    tipo_jornada: meta?.tipoJornada ?? '',
+                });
+            }
         };
-        const nestedArrays = [
-            this.readArray(row, ['detalles', 'detalle', 'horarios', 'bloques', 'time_blocks', 'timeBlocks']),
-        ].filter((list) => list.length > 0);
-        if (nestedArrays.length > 0) {
-            for (const list of nestedArrays) {
-                for (const item of list) {
-                    const dayValue = this.readString(item, ['dia', 'day', 'dias', 'weekday']);
-                    const startValue = this.readString(item, ['hora_inicio', 'inicio', 'start', 'start_time']);
-                    const endValue = this.readString(item, ['hora_fin', 'fin', 'end', 'end_time']);
-                    const days = dayValue.split(',').map((entry) => entry.trim()).filter(Boolean);
-                    if (days.length === 0) {
-                        pushBlock(dayValue, startValue, endValue);
-                        continue;
-                    }
-                    days.forEach((day) => pushBlock(day, startValue, endValue));
+        for (const jornada of jornadaRows) {
+            const bloques = this.readArray(jornada, ['bloques']);
+            const tipoJornada = this.readString(jornada, ['tipo']);
+            for (const bloque of bloques) {
+                const periodo = this.readObject(bloque, ['periodo']);
+                const periodoId = this.readNumber(periodo, ['id']) || this.readNumber(bloque, ['id_periodo_curso']);
+                const salon = this.readString(this.readObject(bloque, ['salon']), ['nombre']);
+                let dayValue = this.readString(bloque, ['dia', 'day', 'dias', 'weekday']) ||
+                    this.readString(periodo, ['dia', 'day', 'dias', 'weekday']) ||
+                    this.readString(jornada, ['dia', 'day', 'dias', 'weekday']) ||
+                    this.readString(variantRow, ['dia', 'day', 'dias', 'weekday']) ||
+                    this.readString(cursoRow, ['dia', 'day', 'dias', 'weekday']);
+                if (!dayValue && periodoMap && periodoId > 0) {
+                    dayValue = periodoMap.get(periodoId) || '';
+                }
+                const startValue = this.readString(periodo, ['hora_inicio', 'inicio', 'start', 'start_time']) ||
+                    this.readString(bloque, ['hora_inicio', 'inicio', 'start', 'start_time']);
+                const endValue = this.readString(periodo, ['hora_fin', 'fin', 'end', 'end_time']) ||
+                    this.readString(bloque, ['hora_fin', 'fin', 'end', 'end_time']);
+                const days = dayValue
+                    .split(',')
+                    .map((entry) => entry.trim())
+                    .filter(Boolean);
+                if (days.length === 0) {
+                    pushBlock('', startValue, endValue, {
+                        periodoId,
+                        salon,
+                        tipoJornada,
+                    });
+                    continue;
+                }
+                days.forEach((day) => pushBlock(day, startValue, endValue, {
+                    periodoId,
+                    salon,
+                    tipoJornada,
+                }));
+            }
+        }
+        return { blocks, detailedBlocks };
+    }
+    async buildVariantsFromLatestSchedule(pensumRows) {
+        const scheduleData = await this.fetchLatestGeneratedSchedule();
+        const cursosExterno = this.readArray(scheduleData, ['cursos']);
+        const periodoMap = await this.buildPeriodoToDayMapping();
+        const byInternalId = new Map();
+        const byExternalCourseId = new Map();
+        const byCodigo = new Map();
+        for (const row of pensumRows) {
+            const idInterno = row.curso?.id;
+            if (!idInterno) {
+                continue;
+            }
+            if (row.curso?.id_externo) {
+                byExternalCourseId.set(Number(row.curso.id_externo), idInterno);
+            }
+            const codigo = this.normalizeCode(row.curso?.codigo ?? '');
+            if (codigo) {
+                byCodigo.set(codigo, idInterno);
+            }
+        }
+        const horarioGeneralId = this.readNumber(scheduleData, ['id_horario_general']);
+        for (const cursoExterno of cursosExterno) {
+            const externalCourseId = this.readNumber(cursoExterno, ['id_curso']);
+            const externalCodigo = this.normalizeCode(this.readString(cursoExterno, ['codigo']));
+            const internalCourseId = byExternalCourseId.get(externalCourseId) ??
+                (externalCodigo ? byCodigo.get(externalCodigo) : undefined);
+            if (!internalCourseId) {
+                continue;
+            }
+            const variantes = this.readArray(cursoExterno, ['variantes']);
+            for (const variantRow of variantes) {
+                const isActive = this.readBoolean(variantRow, ['activo'], true);
+                if (!isActive) {
+                    continue;
+                }
+                const jornadaRows = this.readArray(variantRow, ['jornadas']);
+                const { blocks, detailedBlocks } = this.extractBlocksFromSchedulerVariant(variantRow, jornadaRows, cursoExterno, periodoMap);
+                if (blocks.length === 0) {
+                    continue;
+                }
+                const docente = this.readString(this.readObject(variantRow, ['docente']), ['nombre']);
+                const variant = {
+                    horarioGeneralId,
+                    idCursoHorario: this.readNumber(variantRow, ['id_curso_horario', 'id']),
+                    seccion: this.readString(variantRow, ['seccion']) || 'N/A',
+                    blocks,
+                    detailedBlocks,
+                    minCreditosRequeridos: this.readNumber(variantRow, ['min_creditos_requeridos', 'min_creditos']),
+                    docente: docente || undefined,
+                    semestre: this.readString(cursoExterno, ['semestre']) || undefined,
+                    salon: this.extractFirstSalon(variantRow),
+                };
+                const bucket = byInternalId.get(internalCourseId) ?? [];
+                bucket.push(variant);
+                byInternalId.set(internalCourseId, bucket);
+            }
+        }
+        return byInternalId;
+    }
+    extractFirstSalon(variantRow) {
+        const jornadas = this.readArray(variantRow, ['jornadas']);
+        for (const jornada of jornadas) {
+            const bloques = this.readArray(jornada, ['bloques']);
+            for (const bloque of bloques) {
+                const salon = this.readObject(bloque, ['salon']);
+                const salonNombre = this.readString(salon, ['nombre']);
+                if (salonNombre) {
+                    return salonNombre;
                 }
             }
         }
-        else {
-            const dayValue = this.readString(row, ['dia', 'day', 'dias', 'weekday']);
-            const startValue = this.readString(row, ['hora_inicio', 'inicio', 'start', 'start_time']);
-            const endValue = this.readString(row, ['hora_fin', 'fin', 'end', 'end_time']);
-            const days = dayValue.split(',').map((entry) => entry.trim()).filter(Boolean);
-            if (days.length > 0) {
-                days.forEach((day) => pushBlock(day, startValue, endValue));
-            }
-            else {
-                pushBlock(dayValue, startValue, endValue);
-            }
-        }
-        return blocks;
+        return undefined;
     }
     normalizeDay(raw) {
         const value = raw
@@ -580,7 +707,10 @@ let HorarioEstudianteService = class HorarioEstudianteService {
             do: 'DO',
             sunday: 'DO',
         };
-        return map[value] ?? '';
+        if (!value) {
+            return '*';
+        }
+        return map[value] ?? '*';
     }
     parseTimeToMinutes(raw) {
         if (!raw || raw.trim().length === 0) {
@@ -597,35 +727,17 @@ let HorarioEstudianteService = class HorarioEstudianteService {
         }
         return hours * 60 + minutes;
     }
-    async fetchCollectionWithFallback(baseUrl, endpoints) {
-        for (const endpoint of endpoints) {
-            const response = await fetch(`${baseUrl.replace(/\/$/, '')}/${endpoint}`);
-            if (!response.ok) {
-                continue;
-            }
-            const data = (await response.json());
-            const list = this.normalizeCollection(data);
-            if (list.length > 0) {
-                return list;
-            }
+    async fetchLatestGeneratedSchedule() {
+        const baseUrl = process.env.SCHEDULER_API_BASE_URL ?? 'http://localhost:3000';
+        const response = await fetch(`${baseUrl.replace(/\/$/, '')}/generation/ultimo-horario`);
+        if (!response.ok) {
+            throw new common_1.BadRequestException('No fue posible obtener el ultimo horario generado del scheduler');
         }
-        return [];
-    }
-    normalizeCollection(data) {
-        if (Array.isArray(data)) {
-            return data;
+        const data = (await response.json());
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+            throw new common_1.BadRequestException('La respuesta del scheduler no tiene un formato valido');
         }
-        if (!data || typeof data !== 'object') {
-            return [];
-        }
-        const obj = data;
-        const candidates = [obj.data, obj.items, obj.curso_horario, obj.cursos_horario, obj.results];
-        for (const candidate of candidates) {
-            if (Array.isArray(candidate)) {
-                return candidate;
-            }
-        }
-        return [];
+        return data;
     }
     readArray(source, keys) {
         if (!source || typeof source !== 'object') {
@@ -639,6 +751,19 @@ let HorarioEstudianteService = class HorarioEstudianteService {
             }
         }
         return [];
+    }
+    readObject(source, keys) {
+        if (!source || typeof source !== 'object') {
+            return {};
+        }
+        const obj = source;
+        for (const key of keys) {
+            const value = obj[key];
+            if (value && typeof value === 'object' && !Array.isArray(value)) {
+                return value;
+            }
+        }
+        return {};
     }
     readString(source, keys) {
         if (!source || typeof source !== 'object') {
@@ -666,6 +791,128 @@ let HorarioEstudianteService = class HorarioEstudianteService {
         }
         return 0;
     }
+    readBoolean(source, keys, defaultValue = false) {
+        if (!source || typeof source !== 'object') {
+            return defaultValue;
+        }
+        const obj = source;
+        for (const key of keys) {
+            const value = obj[key];
+            if (typeof value === 'boolean') {
+                return value;
+            }
+        }
+        return defaultValue;
+    }
+    normalizeCode(value) {
+        return value.trim().toUpperCase();
+    }
+    normalizeCollection(data) {
+        if (!data || typeof data !== 'object') {
+            return [];
+        }
+        if (Array.isArray(data)) {
+            return data.filter((item) => item && typeof item === 'object');
+        }
+        const obj = data;
+        for (const key of ['data', 'items', 'periodos', 'dias', 'detalle_dias', 'detalleDias']) {
+            const value = obj[key];
+            if (Array.isArray(value)) {
+                return value.filter((item) => item && typeof item === 'object');
+            }
+        }
+        return [];
+    }
+    async buildPeriodoToDayMapping() {
+        return new Map();
+    }
+    async fetchAndMapPeriodosWithDias(baseUrl, map) {
+        const periodosUrl = `${baseUrl.replace(/\/$/, '')}/periodos`;
+        const detalleDiasUrl = `${baseUrl.replace(/\/$/, '')}/detalle-dias`;
+        const diasUrl = `${baseUrl.replace(/\/$/, '')}/dias`;
+        try {
+            const [periodosData, detalleDiasData, diasData] = await Promise.all([
+                fetch(periodosUrl).then((res) => (res.ok ? res.json() : null)),
+                fetch(detalleDiasUrl).then((res) => (res.ok ? res.json() : null)),
+                fetch(diasUrl).then((res) => (res.ok ? res.json() : null)),
+            ]);
+            const periodos = this.normalizeCollection(periodosData);
+            const detalleDias = this.normalizeCollection(detalleDiasData);
+            const dias = this.normalizeCollection(diasData);
+            console.log('Periodos fetched:', periodos.length);
+            console.log('Detalle-días fetched:', detalleDias.length);
+            console.log('Días fetched:', dias.length);
+            const diasById = new Map();
+            dias.forEach((dia) => {
+                const id = this.readNumber(dia, ['id']);
+                if (id > 0) {
+                    diasById.set(id, dia);
+                }
+            });
+            const detallesByJornada = new Map();
+            detalleDias.forEach((detalle) => {
+                const jornada = this.readNumber(detalle, ['id_jornada_curso']);
+                const diaId = this.readNumber(detalle, ['id_dia']);
+                if (jornada > 0 && diaId > 0) {
+                    detallesByJornada.set(jornada, diaId);
+                }
+            });
+            for (const periodo of periodos) {
+                const periodoId = this.readNumber(periodo, ['id']);
+                if (!periodoId) {
+                    continue;
+                }
+                let dayValue = this.readString(periodo, ['dia', 'day', 'nombre_dia']);
+                if (!dayValue) {
+                    const horaInicioId = this.readNumber(periodo, ['id_hora_inicio']);
+                    const diaId = detallesByJornada.get(horaInicioId);
+                    if (diaId && diasById.has(diaId)) {
+                        const diaObj = diasById.get(diaId);
+                        dayValue = this.readString(diaObj, ['dia', 'nombre', 'nombre_dia']);
+                    }
+                }
+                if (dayValue) {
+                    map.set(periodoId, dayValue);
+                    console.log(`Mapped periodo ${periodoId} → ${dayValue}`);
+                }
+            }
+        }
+        catch (error) {
+            console.warn('Error in fetchAndMapPeriodosWithDias:', error);
+        }
+    }
+    async fetchAndMapDetalleDias(baseUrl, map) {
+        const detalleDiasUrl = `${baseUrl.replace(/\/$/, '')}/detalle-dias`;
+        const diasUrl = `${baseUrl.replace(/\/$/, '')}/dias`;
+        try {
+            const [detalleDiasData, diasData] = await Promise.all([
+                fetch(detalleDiasUrl).then((res) => (res.ok ? res.json() : null)),
+                fetch(diasUrl).then((res) => (res.ok ? res.json() : null)),
+            ]);
+            const detalleDias = this.normalizeCollection(detalleDiasData);
+            const dias = this.normalizeCollection(diasData);
+            const diasById = new Map();
+            dias.forEach((dia) => {
+                const id = this.readNumber(dia, ['id']);
+                const nombre = this.readString(dia, ['dia', 'nombre', 'nombre_dia']);
+                if (id > 0 && nombre) {
+                    diasById.set(id, nombre);
+                }
+            });
+            detalleDias.forEach((detalle) => {
+                const jornada = this.readNumber(detalle, ['id_jornada_curso']);
+                const diaId = this.readNumber(detalle, ['id_dia']);
+                if (jornada > 0 && diaId > 0 && diasById.has(diaId)) {
+                    const dayName = diasById.get(diaId);
+                    map.set(jornada, dayName);
+                    console.log(`Mapped jornada ${jornada} → ${dayName}`);
+                }
+            });
+        }
+        catch (error) {
+            console.warn('Error in fetchAndMapDetalleDias:', error);
+        }
+    }
 };
 exports.HorarioEstudianteService = HorarioEstudianteService;
 exports.HorarioEstudianteService = HorarioEstudianteService = __decorate([
@@ -676,12 +923,8 @@ exports.HorarioEstudianteService = HorarioEstudianteService = __decorate([
     __param(3, (0, typeorm_1.InjectRepository)(seleccion_cursos_entity_1.SeleccionCursos)),
     __param(4, (0, typeorm_1.InjectRepository)(historial_academico_entity_1.HistorialAcademico)),
     __param(5, (0, typeorm_1.InjectRepository)(curso_prerrequisito_entity_1.CursoPrerrequisito)),
-    __param(6, (0, typeorm_1.InjectRepository)(horario_general_entity_1.HorarioGeneral)),
-    __param(7, (0, typeorm_1.InjectRepository)(curso_entity_1.Curso)),
-    __param(8, (0, typeorm_1.InjectRepository)(detalle_horario_entity_1.DetalleHorario)),
+    __param(6, (0, typeorm_1.InjectRepository)(detalle_horario_entity_1.DetalleHorario)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository,
-        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
